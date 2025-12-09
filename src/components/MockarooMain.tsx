@@ -23,7 +23,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
 
   React.useEffect(() => {
     console.log("Effect to load tables triggered", viewModel.tables.length, connection, isLoading, tablesLoaded);
-    if (!tablesLoaded && viewModel.tables.length === 0 && connection) {
+    if (connection && !tablesLoaded && viewModel.tables.length === 0) {
       dvService.loadTables().then((tables) => {
         onLog("Tables loaded successfully", "success");
         viewModel.tables = tables;
