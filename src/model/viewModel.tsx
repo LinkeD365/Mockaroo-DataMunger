@@ -1,7 +1,10 @@
 import { makeAutoObservable } from "mobx";
+import { MockType } from "./Config";
 
 export class ViewModel {
   tables: Table[] = [];
+  selectedTableName?: string;
+  MockTypes: MockType[] = [];
   // Define your observable properties here
   constructor() {
     makeAutoObservable(this);
@@ -9,12 +12,12 @@ export class ViewModel {
 }
 
 export class Table {
-  name: string;
+  logical: string;
   id: string;
   label: string;
 
-  constructor(name: string, id: string, label: string) {
-    this.name = name;
+  constructor(logical: string, id: string, label: string) {
+    this.logical = logical;
     this.id = id;
     this.label = label;
     makeAutoObservable(this);

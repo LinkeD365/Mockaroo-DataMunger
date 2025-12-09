@@ -12,7 +12,7 @@ function App() {
 
   // Handle platform events
   const handleEvent = useCallback(
-    (event: string, _data: any) => {
+    async (event: string, _data: any) => {
       switch (event) {
         case "connection:updated":
         case "connection:created":
@@ -27,6 +27,11 @@ function App() {
         case "terminal:command:completed":
         case "terminal:error":
           // Terminal events handled by dedicated components
+          break;
+        case "settings:updated":
+          console.log("Theme or settings updated, refreshing theme");
+          const theme = await window.toolboxAPI.utils.getCurrentTheme();
+          setTheme(theme);
           break;
       }
     },
