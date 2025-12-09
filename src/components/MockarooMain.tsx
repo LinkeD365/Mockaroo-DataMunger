@@ -15,18 +15,22 @@ interface MockarooMainProps {
 export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Element => {
   const { connection, dvService, isLoading, viewModel, onLog } = props;
 
+  //#region useState hooks
+  // Track if tables have been loaded to avoid infinite loop
+  const [tablesLoaded, setTablesLoaded] = React.useState(false);
+  const [selectedTab, setSelectedTab] = React.useState<TabValue>("config");
+  //#endregion
+
   React.useEffect(() => {
-    console.log("Effect to load tables triggered", viewModel.tables.length, connection, isLoading);
-    if (viewModel.tables.length === 0 && connection) {
+    console.log("Effect to load tables triggered", viewModel.tables.length, connection, isLoading, tablesLoaded);
+    if (connection && !tablesLoaded && viewModel.tables.length === 0) {
       dvService.loadTables().then((tables) => {
         onLog("Tables loaded successfully", "success");
         viewModel.tables = tables;
+        setTablesLoaded(true);
       });
     }
-  }, [connection, dvService]);
-  //#region UseStates
-  const [selectedTab, setSelectedTab] = React.useState<TabValue>("config");
-  //#endregion
+  }, [connection, dvService, onLog, tablesLoaded]);
 
   //#region Events
   const onMainTabSelect = (_event: SelectTabEvent, data: SelectTabData) => {
@@ -50,7 +54,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
       <div style={{ display: "flex", width: "100%", alignItems: "center" }}>
         {selectedTab === "config" && (
           <div style={{ marginLeft: "auto", marginRight: "10px" }}>
-            <Dropdown placeholder="Select a table test">{tablesList}</Dropdown>
+            <Dropdown placeholder="Select a table">{tablesList}</Dropdown>
           </div>
         )}
       </div>
