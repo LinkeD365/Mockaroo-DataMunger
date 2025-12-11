@@ -98,4 +98,21 @@ export class dvService {
     }
     return [];
   }
+
+  async createData(tableName: string, data: any[]): Promise<void> {
+    if (!this.connection || !this.connection.isActive) {
+      this.onLog("No connection available", "error");
+      throw new Error("No connection available");
+    }
+    await this.dvApi
+      .create(tableName, { records: data })
+      .then(() => {
+        this.onLog(`Created ${data.length} records in table: ${tableName}`, "success");
+      })
+      .catch((error) => {
+        this.onLog(`Error creating data: ${error}`, "error");
+        console.error("Error creating data:", error);
+        throw error;
+      });
+  }
 }

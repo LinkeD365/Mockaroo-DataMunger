@@ -1,10 +1,14 @@
 import { makeAutoObservable } from "mobx";
-import { MockType } from "./Config";
+import { Config, MockType } from "./Config";
+import { DataRow } from "./Data";
 
 export class ViewModel {
   tables: Table[] = [];
   selectedTableName?: string;
-  MockTypes: MockType[] = [];
+  mockTypes: MockType[] = [];
+  config?: Config;
+  data?: any[];
+  dataRows?: DataRow[];
   // Define your observable properties here
   constructor() {
     makeAutoObservable(this);

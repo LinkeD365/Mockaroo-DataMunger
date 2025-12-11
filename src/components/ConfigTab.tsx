@@ -5,6 +5,7 @@ import { observer } from "mobx-react";
 import { Config, ConfigField } from "../model/Config";
 import {
   Combobox,
+  ComboboxProps,
   createTableColumn,
   DataGrid,
   DataGridBody,
@@ -12,12 +13,31 @@ import {
   DataGridHeader,
   DataGridHeaderCell,
   DataGridRow,
-  Dropdown,
+  Field,
+  Input,
+  makeStyles,
   Option,
   Switch,
   TableColumnDefinition,
   tokens,
+  Toolbar,
+  ToolbarGroup,
 } from "@fluentui/react-components";
+
+const useStyles = makeStyles({
+  listbox: {
+    height: "200px",
+    // maxHeight will be applied only positioning autoSize set.
+    maxHeight: "20px",
+    overflowX: "hidden",
+  },
+  option: {
+    height: "50px",
+  },
+  toolbar: {
+    justifyContent: "space-between",
+  },
+});
 
 interface ConfigTabProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -29,22 +49,22 @@ interface ConfigTabProps {
 
 export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => {
   const { connection, dvService, isLoading, viewModel, onLog } = props;
-
-  const [config, setConfig] = React.useState<Config | null>(null);
+  const styles = useStyles();
   const [loadingConfig, setLoadingConfig] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     const loadConfig = async () => {
       if (connection && viewModel.selectedTableName) {
+        if (viewModel.config && viewModel.config.table.logical === viewModel.selectedTableName) {
+          // Configuration already loaded for the selected table
+          return;
+        }
         const selectedTable = viewModel.tables.find((table) => table.logical === viewModel.selectedTableName);
         if (selectedTable) {
           try {
             setLoadingConfig(true);
             const retrievedConfig: Config = await dvService.loadConfig(selectedTable);
-            onLog("Configuration loaded successfully", "success");
-            console.log("Retrieved Config:", retrievedConfig);
-            setConfig(retrievedConfig);
-            console.log("Config set in state:", retrievedConfig);
+            viewModel.config = retrievedConfig;
           } catch (err) {
             onLog("Failed to load configuration", "error");
             console.error(err);
@@ -54,10 +74,33 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
         }
       }
     };
-
+    console.log("useEffect", viewModel.selectedTableName, dvService, connection);
     loadConfig();
-  }, [connection, isLoading, viewModel.selectedTableName, dvService, onLog]);
-
+  }, [connection, viewModel.selectedTableName, dvService, onLog]);
+  async function updateItem(item: ConfigField) {
+    if (!viewModel.config || !viewModel.config.fields) return;
+    try {
+      if (item.detailsRetrieved === false) {
+        // Load additional details if not already retrieved
+        console.log("Loading details for field:", item.logicalName);
+        const detailedField = await dvService.loadFieldDetails(viewModel.config.table, item);
+        item.fieldDetails = detailedField;
+        item.detailsRetrieved = true;
+      }
+      viewModel.config.fields = viewModel.config.fields.map((f: ConfigField) => {
+        if (f.logicalName === item.logicalName) {
+          // mutate the existing object to preserve properties like mockMatch/prototype
+          Object.assign(f, item);
+        }
+        return f;
+      });
+    } catch (err) {
+      onLog("Failed to update field include", "error");
+    }
+  }
+  const onOptionSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
+    viewModel.selectedTableName = data.optionValue as string;
+  };
   const configColumns: TableColumnDefinition<ConfigField>[] = [
     createTableColumn<ConfigField>({
       columnId: "fieldName",
@@ -96,37 +139,6 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
         return "Include";
       },
       renderCell: (item) => {
-        async function updateItemSelect(item: ConfigField) {
-          if (!config) return;
-          try {
-            if (item.detailsRetrieved === false) {
-              // Load additional details if not already retrieved
-              console.log("Loading details for field:", item.logicalName);
-              const detailedField = await dvService.loadFieldDetails(config.table, item);
-              item.fieldDetails = detailedField;
-              item.detailsRetrieved = true;
-            }
-            setConfig((prev) => {
-              if (!prev) return prev;
-              return {
-                ...prev,
-                fields: prev.fields
-                  ? prev.fields.map((f: ConfigField) => {
-                      if (f.logicalName === item.logicalName) {
-                        // mutate the existing object to preserve properties like mockMatch/prototype
-                        Object.assign(f, { include: !f.include });
-                      }
-                      return f;
-                    })
-                  : prev.fields,
-              } as Config;
-            });
-
-          } catch (err) {
-            onLog("Failed to update field include", "error");
-          }
-        }
-
         return (
           <div style={{ verticalAlign: "top" }}>
             <Switch
@@ -134,9 +146,11 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               checked={item.include}
               size="small"
               onChange={() => {
-                updateItemSelect(item);
+                item.include = !item.include;
+                updateItem(item);
               }}
-            />{item.detailsRetrieved } {item.fieldDetails.length}
+            />
+            {item.detailsRetrieved} {item.fieldDetails.length}
           </div>
         );
       },
@@ -149,12 +163,26 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
       renderCell: (item) => {
         return (
           <div style={{ verticalAlign: "top" }}>
-            <Combobox disabled={!item.include} size="small">
-              {viewModel.MockTypes.filter((mt) => mt.type === item.mockMatch).map((mt) => (
-                <Option key={mt.name} value={mt.name}>
-                  {mt.name}
-                </Option>
-              ))}{" "}
+            <Combobox
+              disabled={!item.include}
+              size="small"
+              placeholder="Select mock type"
+              value={item.selectedMock?.name || ""}
+              onOptionSelect={(_e, data) => {
+                const selected = viewModel.mockTypes.find((mt) => mt.name === data.optionValue);
+                if (selected) {
+                  item.selectedMock = selected;
+                  updateItem(item);
+                }
+              }}
+            >
+              {viewModel.mockTypes
+                .filter((mt) => mt.type === item.mockMatch)
+                .map((mt) => (
+                  <Option key={mt.name} value={mt.name}>
+                    {mt.name}
+                  </Option>
+                ))}{" "}
             </Combobox>
           </div>
         );
@@ -164,7 +192,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
 
   const configGrid = (
     <>
-      <DataGrid columns={configColumns} items={config?.fields || []} sortable resizableColumns>
+      <DataGrid columns={configColumns} items={viewModel.config?.fields || []} sortable resizableColumns>
         <DataGridHeader
           style={{
             position: "sticky",
@@ -189,10 +217,52 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
       </DataGrid>
     </>
   );
+  const tablesList = (
+    <>
+      {viewModel.tables.map((table) => (
+        <Option key={table.id} value={table.logical}>
+          {table.label}
+        </Option>
+      ))}
+    </>
+  );
+  const toolbar = (
+    <div>
+      <Toolbar className={styles.toolbar}>
+        <ToolbarGroup>
+          <Combobox
+            disabled={!viewModel.tables || viewModel.tables.length === 0}
+            placeholder="Select a table"
+            listbox={{ className: styles.listbox }}
+            positioning={{ autoSize: true }}
+            onOptionSelect={onOptionSelect}
+            value={viewModel.tables.find((table) => table.logical === viewModel.selectedTableName)?.label || ""}
+            style={{ width: "200px" }}
+            size="small"
+          >
+            {tablesList}
+          </Combobox>
+        </ToolbarGroup>
+        <ToolbarGroup>
+          <Field size="small" label="No. of Rows ">
+            <Input
+              size="small"
+              type="number"
+              width={100}
+              placeholder="Number of records"
+              defaultValue="100"
+              style={{ width: "80px" }}
+            />
+          </Field>
+        </ToolbarGroup>
+      </Toolbar>
+    </div>
+  );
   return (
     <div>
+      {toolbar}
       {loadingConfig && <div>Loading configuration...</div>}
-      {!loadingConfig && config && configGrid}
+      {!loadingConfig && viewModel.config && configGrid}
     </div>
   );
 });

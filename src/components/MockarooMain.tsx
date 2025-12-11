@@ -3,24 +3,31 @@ import { ViewModel } from "../model/viewModel";
 import { dvService } from "../utils/dataverse";
 import React from "react";
 import {
-  Combobox,
-  ComboboxProps,
-  Field,
-  Input,
-  Label,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogBody,
+  DialogContent,
+  DialogSurface,
+  DialogTitle,
+  DialogTrigger,
   makeStyles,
-  Option,
   SelectTabData,
   SelectTabEvent,
   Tab,
   TabList,
   TabValue,
+  Tooltip,
 } from "@fluentui/react-components";
+import { DatabaseArrowUpFilled, DatabaseCheckmarkFilled } from "@fluentui/react-icons";
 import { ConfigTab } from "./ConfigTab";
+import { mockarooService } from "../utils/mockaroo";
+import { DataTab } from "./DataTab";
 
 interface MockarooMainProps {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dvService: dvService;
+  dvSvc: dvService;
+  mckSvc: mockarooService;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -36,32 +43,44 @@ const useStyles = makeStyles({
   option: {
     height: "50px",
   },
+  button: {
+    marginRight: "8px",
+  },
+  tabEnd: {
+    display: "flex",
+    width: "100%",
+    alignItems: "center",
+    marginLeft: "auto",
+    justifyItems: "end",
+    justifyContent: "flex-end",
+  },
 });
 
 export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Element => {
-  const { connection, dvService, isLoading, viewModel, onLog } = props;
+  const { connection, dvSvc, mckSvc, isLoading, viewModel, onLog } = props;
 
   //#region useState hooks
   // Track if tables have been loaded to avoid infinite loop
   const [tablesLoaded, setTablesLoaded] = React.useState(false);
   const [selectedTab, setSelectedTab] = React.useState<TabValue>("config");
+  const [openSaveDialog, setOpenSaveDialog] = React.useState(false);
   //#endregion
   const styles = useStyles();
 
   React.useEffect(() => {
-    console.log("Effect to load tables triggered", viewModel.tables.length, connection, isLoading, tablesLoaded);
+    //console.log("Effect to load tables triggered", viewModel.tables.length, connection, isLoading, tablesLoaded);
 
     if (connection && !tablesLoaded && viewModel.tables.length === 0) {
-      dvService.loadTables().then((tables) => {
+      dvSvc.loadTables().then((tables) => {
         onLog("Tables loaded successfully", "success");
         viewModel.tables = tables;
         setTablesLoaded(true);
       });
     }
-  }, [connection, dvService, onLog, tablesLoaded]);
+  }, [connection, dvSvc, onLog, tablesLoaded]);
 
   React.useEffect(() => {
-    if (viewModel.MockTypes.length === 0) {
+    if (viewModel.mockTypes.length === 0) {
       // Initialize MockTypes only once
       let types = "[]";
       (async () => {
@@ -70,14 +89,11 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
           const mod = await import("../model/Mocks.json");
           // JSON modules may be exported as default or as the module itself depending on bundler
           types = JSON.stringify((mod && (mod.default ?? mod)) ?? []);
-
-          console.log(types);
         } catch (err) {
           console.error("Failed to load mocks.json:", err);
           types = "[]";
         }
-        viewModel.MockTypes = JSON.parse(types).types;
-        console.log("MockTypes initialized:", viewModel.MockTypes);
+        viewModel.mockTypes = JSON.parse(types).types;
       })();
     }
   }, []);
@@ -87,61 +103,85 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
     setSelectedTab(data.value);
   };
 
-  const onOptionSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
-    viewModel.selectedTableName = data.optionValue as string;
-  };
+  function getData(): void {
+    mckSvc.getMockData(10, viewModel.config?.jsonString ?? "").then((data) => {
+      viewModel.data = data;
+      window.toolboxAPI.utils.showNotification({
+        title: "Mock Data Generated",
+        body: `${viewModel.data.length} mock data generated successfully`,
+        type: "success",
+      });
+      setSelectedTab("data");
+      onLog(`Generated ${viewModel.data.length} mock data records`, "success");
+    });
+  }
+
+  function createDataConfirmation(): void {
+    setOpenSaveDialog(true);
+  }
+
+  async function createData(): Promise<void> {
+    console.log("Creating data in Dataverse:", viewModel.data);
+    await dvSvc.createData(viewModel.selectedTableName, viewModel.data || []).then(() => {
+      window.toolboxAPI.utils.showNotification({
+        title: "Data Created",
+        body: `${viewModel.data?.length} records created successfully`,
+        type: "success",
+      });
+      setOpenSaveDialog(false);
+    });
+  }
+
+  const saveDialog = (
+    <Dialog open={openSaveDialog} onOpenChange={(event, data) => setOpenSaveDialog(data.open)}>
+      <DialogSurface>
+        <DialogBody>
+          <DialogTitle>Create Data</DialogTitle>
+          <DialogContent>
+            Do you want to create {viewModel.data?.length} records in the {viewModel.tables.find(t => t.logical === viewModel.selectedTableName)?.label} table?
+          </DialogContent>
+          <DialogActions>
+            <Button appearance="primary" onClick={createData}>Create Data</Button>
+            <DialogTrigger disableButtonEnhancement>
+              <Button appearance="secondary">Cancel</Button>
+            </DialogTrigger>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
+  );
 
   //#endregion
 
-  const tablesList = (
-    <>
-      {viewModel.tables.map((table) => (
-        <Option key={table.id} value={table.logical}>
-          {table.label}
-        </Option>
-      ))}
-    </>
-  );
   const tabs = (
     <TabList selectedValue={selectedTab} onTabSelect={onMainTabSelect}>
       <Tab value="config">Configuration</Tab>
-      <Tab value="data">Data</Tab>
+      <Tab value="data" disabled={!(viewModel.data && viewModel.data.length > 0)}>
+        Data
+      </Tab>
       {selectedTab === "config" && (
-        <div
-          style={{
-            display: "flex",
-            width: "100%",
-            alignItems: "center",
-            marginLeft: "auto",
-            justifyItems: "end",
-            justifyContent: "flex-end",
-          }}
-        >
-          <div style={{ marginRight: "5px" }}>
-            <Field size="small" label="No. of Rows ">
-              <Input
-                size="small"
-                type="number"
-                width={100}
-                placeholder="Number of records"
-                defaultValue="100"
-                style={{ width: "80px" }}
-              />
-            </Field>
-          </div>
-          <div style={{ width: "100px" }}>
-            <Combobox
-              disabled={!tablesLoaded}
-              placeholder="Select a table"
-              listbox={{ className: styles.listbox }}
-              positioning={{ autoSize: true }}
-              onOptionSelect={onOptionSelect}
-              style={{width:"100%"}}
-              size="small"
-            >
-              {tablesList}
-            </Combobox>
-          </div>
+        <div className={styles.tabEnd}>
+          <Tooltip content="Generate mock data" relationship="label" {...props}>
+            <Button
+              className={styles.button}
+              icon={<DatabaseArrowUpFilled />}
+              disabled={(viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0}
+              onClick={getData}
+            />
+          </Tooltip>
+        </div>
+      )}
+      {selectedTab === "data" && (
+        <div className={styles.tabEnd}>
+          <Tooltip content="Create data in Dataverse" relationship="label" {...props}>
+            <Button
+              className={styles.button}
+              icon={<DatabaseCheckmarkFilled />}
+              disabled={(viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0}
+              onClick={createDataConfirmation}
+              aria-label="Create Data in Dataverse"
+            />
+          </Tooltip>
         </div>
       )}
     </TabList>
@@ -150,14 +190,18 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   return (
     <>
       {tabs}
+      {saveDialog}
       {selectedTab === "config" && (
         <ConfigTab
           connection={connection}
-          dvService={dvService}
+          dvService={dvSvc}
           isLoading={isLoading}
           viewModel={viewModel}
           onLog={onLog}
         />
+      )}
+      {selectedTab === "data" && (
+        <DataTab connection={connection} dvService={dvSvc} isLoading={isLoading} viewModel={viewModel} onLog={onLog} />
       )}
     </>
   );

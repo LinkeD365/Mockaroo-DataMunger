@@ -5,6 +5,7 @@ import { FluentProvider, webDarkTheme, webLightTheme } from "@fluentui/react-com
 import { ViewModel } from "./model/viewModel";
 
 import { dvService } from "./utils/dataverse";
+import { mockarooService } from "./utils/mockaroo";
 
 function App() {
   const { connection, isLoading, refreshConnection } = useConnection();
@@ -52,6 +53,16 @@ function App() {
       onLog: addLog,
     });
   }, [connection, addLog]);
+
+  const mockarooSvc = useMemo(() => {
+    console.log("Creating mockarooService with connection:", connection);
+    return new mockarooService({
+      connection: connection,
+      dataverse: dvSvc,
+      onLog: addLog,
+    });
+  }, [connection, dvSvc, addLog]);
+
   useEffect(() => {
     (async () => {
       const currentTheme = await window.toolboxAPI.utils.getCurrentTheme();
@@ -63,9 +74,10 @@ function App() {
       <MockarooMain
         connection={connection}
         viewModel={viewModel}
-        dvService={dvSvc}
+        dvSvc={dvSvc}
         onLog={addLog}
         isLoading={isLoading}
+        mckSvc={mockarooSvc}
       />
     </FluentProvider>
   );

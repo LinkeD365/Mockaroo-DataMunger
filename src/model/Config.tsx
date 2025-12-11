@@ -8,8 +8,15 @@ export class Config {
   constructor(table: Table, fields?: ConfigField[]) {
     this.table = table;
     this.fields = fields;
-    console.log("Config created with table:", table, "and fields:", fields);
+
     makeAutoObservable(this);
+  }
+  get jsonString(): string {
+    return JSON.stringify(
+      this.fields
+        ?.filter((field) => field.include )
+        .map((field) => ({ name: field.logicalName, type: field.selectedMock?.name || "" })) ?? []
+    );
   }
 }
 
@@ -22,6 +29,7 @@ export class ConfigField {
   maxLength?: number;
   detailsRetrieved: boolean = false;
   fieldDetails: { name: string; value: string }[] = [];
+  selectedMock?: MockType;
 
   constructor(logicalName: string, metadataId: string, type: string, displayName: string) {
     this.logicalName = logicalName;
