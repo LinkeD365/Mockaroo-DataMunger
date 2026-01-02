@@ -1,6 +1,7 @@
 import React from "react";
 import { observer } from "mobx-react";
 import { ViewModel } from "../model/viewModel";
+import { dvService } from "../utils/dataverse";
 
 import {
   createTableColumn,
@@ -17,7 +18,7 @@ import { DataRow } from "../model/Data";
 
 interface DataTabProps {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dvService: any;
+  dvService: dvService;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -44,6 +45,8 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
     console.log("Data rows constructed:", viewModel.dataRows);
   }, [viewModel.data, viewModel.config?.fields]);
 
+  // Using 'any' type for data items because they are dynamically generated from Mockaroo API
+  // with different schemas based on user-selected fields
   function dataColumns(): TableColumnDefinition<any>[] {
     //const cols = Object.getOwnPropertyNames(viewModel.data?.[0] || {});
     return dataCols.map((colName) =>
@@ -77,6 +80,7 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
             {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
           </DataGridRow>
         </DataGridHeader>
+        {/* Using 'any' type because data items have dynamic schemas from Mockaroo API */}
         <DataGridBody<any>>
           {({ item, rowId }) => (
             <DataGridRow<any> key={rowId}>
