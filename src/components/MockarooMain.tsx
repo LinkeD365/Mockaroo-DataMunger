@@ -14,6 +14,7 @@ import {
   makeStyles,
   SelectTabData,
   SelectTabEvent,
+  Spinner,
   Tab,
   TabList,
   TabValue,
@@ -64,6 +65,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   const [tablesLoaded, setTablesLoaded] = React.useState(false);
   const [selectedTab, setSelectedTab] = React.useState<TabValue>("config");
   const [openSaveDialog, setOpenSaveDialog] = React.useState(false);
+  const [creatingData, setCreatingData] = React.useState(false);
   //#endregion
   const styles = useStyles();
 
@@ -104,8 +106,15 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   };
 
   function getData(): void {
-    mckSvc.getMockData(10, viewModel.config?.jsonString ?? "").then((data) => {
+    mckSvc.getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "").then((data) => {
+      console.log("Mock data received from Mockaroo:", data);
       viewModel.data = data;
+      viewModel.data = viewModel.data.map((item) => ({
+        ...item,
+        "@odata.type": `Microsoft.Dynamics.CRM.${
+          viewModel.tables.find((t) => t.logical === viewModel.selectedTableName)?.logical
+        }`,
+      }));
       window.toolboxAPI.utils.showNotification({
         title: "Mock Data Generated",
         body: `${viewModel.data.length} mock data generated successfully`,
@@ -113,6 +122,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
       });
       setSelectedTab("data");
       onLog(`Generated ${viewModel.data.length} mock data records`, "success");
+      console.log("Mock data received from Mockaroo:", viewModel.data);
     });
   }
 
@@ -122,14 +132,34 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
 
   async function createData(): Promise<void> {
     console.log("Creating data in Dataverse:", viewModel.data);
-    await dvSvc.createData(viewModel.selectedTableName, viewModel.data || []).then(() => {
-      window.toolboxAPI.utils.showNotification({
-        title: "Data Created",
-        body: `${viewModel.data?.length} records created successfully`,
-        type: "success",
+    setCreatingData(true);
+    await dvSvc
+      .createData(
+        viewModel.tables.find((t) => t.logical === viewModel.selectedTableName) ?? undefined,
+        viewModel.data || []
+      )
+      .then(() => {
+        window.toolboxAPI.utils.showNotification({
+          title: "Data Created",
+          body: `${viewModel.data?.length} records created successfully`,
+          type: "success",
+        });
+
+        onLog(`Created ${viewModel.data?.length} records in Dataverse`, "success");
+      })
+      .catch((err) => {
+        console.error("Error creating data:", err);
+
+        window.toolboxAPI.utils.showNotification({
+          title: "Data Creation Error",
+          body: `Not all records could be created. Please check your configuration and the error message: ${err}`,
+          type: "error",
+        });
+      })
+      .finally(() => {
+        setCreatingData(false);
+        setOpenSaveDialog(false);
       });
-      setOpenSaveDialog(false);
-    });
   }
 
   const saveDialog = (
@@ -138,12 +168,28 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
         <DialogBody>
           <DialogTitle>Create Data</DialogTitle>
           <DialogContent>
-            Do you want to create {viewModel.data?.length} records in the {viewModel.tables.find(t => t.logical === viewModel.selectedTableName)?.label} table?
+            {!creatingData && (
+              <div>
+                Do you want to create {viewModel.data?.length} records in the{" "}
+                {viewModel.tables.find((t) => t.logical === viewModel.selectedTableName)?.label} table?
+              </div>
+            )}
+            {creatingData && (
+              <Spinner
+                label={
+                  "Creating " + viewModel.tables.find((t) => t.logical === viewModel.selectedTableName)?.label + "(s)"
+                }
+              />
+            )}
           </DialogContent>
           <DialogActions>
-            <Button appearance="primary" onClick={createData}>Create Data</Button>
+            <Button appearance="primary" disabled={creatingData} onClick={createData}>
+              Create Data
+            </Button>
             <DialogTrigger disableButtonEnhancement>
-              <Button appearance="secondary">Cancel</Button>
+              <Button appearance="secondary" disabled={creatingData} onClick={() => setOpenSaveDialog(false)}>
+                Cancel
+              </Button>
             </DialogTrigger>
           </DialogActions>
         </DialogBody>

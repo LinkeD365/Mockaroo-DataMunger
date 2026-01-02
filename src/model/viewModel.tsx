@@ -9,6 +9,7 @@ export class ViewModel {
   config?: Config;
   data?: any[];
   dataRows?: DataRow[];
+  rowCount: number = 100;
   // Define your observable properties here
   constructor() {
     makeAutoObservable(this);
@@ -19,6 +20,7 @@ export class Table {
   logical: string;
   id: string;
   label: string;
+  setName?: string;
 
   constructor(logical: string, id: string, label: string) {
     this.logical = logical;

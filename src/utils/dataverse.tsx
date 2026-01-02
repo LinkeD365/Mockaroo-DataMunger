@@ -1,3 +1,4 @@
+import { toJS } from "mobx";
 import { Config, ConfigField } from "../model/Config";
 import { Table } from "../model/viewModel";
 
@@ -25,14 +26,21 @@ export class dvService {
     console.log("Loading tables from Dataverse...");
     try {
       this.onLog("Loading tables from Dataverse...", "info");
-      const tablesMetadata = await this.dvApi.getAllEntitiesMetadata();
+      const tablesMetadata = await this.dvApi.getAllEntitiesMetadata([
+        "MetadataId",
+        "LogicalName",
+        "DisplayName",
+        "EntitySetName",
+      ]);
       console.log("Tables metadata retrieved:", tablesMetadata);
       const tables: Table[] = tablesMetadata.value.map((tableMeta: any) => {
-        const table = new Table(
-          tableMeta.LogicalName,
-          tableMeta.MetadataId,
-          tableMeta.DisplayName?.UserLocalizedLabel?.Label || tableMeta.LogicalName
-        );
+        const table = {
+          logical: tableMeta.LogicalName,
+          id: tableMeta.MetadataId,
+          label: tableMeta.DisplayName?.UserLocalizedLabel?.Label || tableMeta.LogicalName,
+          setName: tableMeta.EntitySetName,
+        } as Table;
+
         return table;
       });
       return tables.sort((a, b) => a.label.localeCompare(b.label));
@@ -43,7 +51,7 @@ export class dvService {
     }
   }
   async loadConfig(selectedTable: Table): Promise<Config> {
-    if (!this.connection || !this.connection.isActive) {
+    if (!this.connection) {
       this.onLog("No connection available", "error");
       throw new Error("No connection available");
     }
@@ -99,20 +107,34 @@ export class dvService {
     return [];
   }
 
-  async createData(tableName: string, data: any[]): Promise<void> {
-    if (!this.connection || !this.connection.isActive) {
-      this.onLog("No connection available", "error");
-      throw new Error("No connection available");
-    }
-    await this.dvApi
-      .create(tableName, { records: data })
-      .then(() => {
-        this.onLog(`Created ${data.length} records in table: ${tableName}`, "success");
-      })
-      .catch((error) => {
-        this.onLog(`Error creating data: ${error}`, "error");
-        console.error("Error creating data:", error);
-        throw error;
-      });
+  async createData(table?: Table, data?: any[]): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      if (!this.connection) {
+        this.onLog("No connection available", "error");
+        throw new Error("No connection available");
+      }
+      if (!table || !data || data.length === 0) {
+        this.onLog("No table selected or data passed for data creation", "error");
+        throw new Error("No table selected or data passed for data creation");
+      }
+
+      const batchSize = 100;
+      const batches: any[] = [];
+      for (let i = 0; i < data.length; i += batchSize) {
+        batches.push(toJS(data).slice(i, i + batchSize));
+      }
+
+      window.toolboxAPI.utils
+        .executeParallel(() => Promise.all(batches.map((batch) => this.dvApi.createMultiple(table.logical, batch))))
+        .then(() => {
+          resolve();
+        })
+        .catch((error) => {
+          this.onLog(`Error creating data: ${error}`, "error");
+          console.error("Error creating data:", error);
+
+          reject(error);
+        });
+    });
   }
 }

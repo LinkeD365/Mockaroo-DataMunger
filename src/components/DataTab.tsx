@@ -27,11 +27,12 @@ interface DataTabProps {
 
 export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
   const { connection, dvService, isLoading, viewModel, onLog } = props;
-  const [ dataCols ] = React.useState<string[]>(Object.getOwnPropertyNames(viewModel.data?.[0] || {}));
+  const [dataCols] = React.useState<string[]>(Object.getOwnPropertyNames(viewModel.data?.[0] || {}).filter((col) => col !== "@odata.type"));
 
   React.useEffect(() => {
     console.log("Data changed:", Object.getOwnPropertyNames(viewModel.data?.[0] || {}));
-    const cols = Object.getOwnPropertyNames(viewModel.data?.[0] || {});
+    const cols = Object.getOwnPropertyNames(viewModel.data?.[0] || {}).filter((col) => col !== "@odata.type");
+    ;
     const rows: DataRow[] = [];
 
     // Build rows only when we have a matching config field; skip columns without config to satisfy DataRow parameter type.
@@ -44,9 +45,7 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
     });
     viewModel.dataRows = rows;
     console.log("Data rows constructed:", viewModel.dataRows);
-    // TODO: do something with rows (assign to state or viewModel) if needed
-  }, [viewModel.data, viewModel.config?.fields]);
-
+  }, [viewModel.data?.length, viewModel.config?.fields]);
 
   function dataColumns(): TableColumnDefinition<any>[] {
     //const cols = Object.getOwnPropertyNames(viewModel.data?.[0] || {});
@@ -54,7 +53,11 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
       createTableColumn<any>({
         columnId: colName,
         compare: (a, b) => a[colName]?.toString().localeCompare(b[colName]?.toString() || "") || 0,
-        renderHeaderCell: () => <DataGridHeaderCell>{viewModel.config?.fields?.find(f => f.logicalName === colName)?.displayName || colName}</DataGridHeaderCell>,
+        renderHeaderCell: () => (
+          <DataGridHeaderCell>
+            {viewModel.config?.fields?.find((f) => f.logicalName === colName)?.displayName || colName}
+          </DataGridHeaderCell>
+        ),
         renderCell: (item) => <DataGridCell>{item[colName]}</DataGridCell>,
       })
     );
@@ -62,6 +65,7 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
 
   return (
     <div>
+      {dataColumns.length} || {dataCols.length}
       <DataGrid columns={dataColumns()} items={viewModel.data || []}>
         <DataGridHeader
           style={{

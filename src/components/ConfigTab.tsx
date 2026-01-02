@@ -250,8 +250,9 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               type="number"
               width={100}
               placeholder="Number of records"
-              defaultValue="100"
+              value={viewModel.rowCount.toString()}
               style={{ width: "80px" }}
+              onChange={(e) => {viewModel.rowCount = parseInt(e.target.value);}}  
             />
           </Field>
         </ToolbarGroup>

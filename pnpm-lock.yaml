@@ -28,8 +28,8 @@ importers:
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@pptb/types':
-        specifier: ^1.0.1
-        version: 1.0.8
+        specifier: link:..\desktop-app\packages
+        version: link:../desktop-app/packages
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.27
@@ -854,9 +854,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@pptb/types@1.0.8':
-    resolution: {integrity: sha512-qGjif4qCFvGsHFB4Ly0xcvfTMkr+IB9WXh2/Zn0/C//orX6IBpnlSXn2D3xUjj69a9hAiqjVMhNJ1fpJJNqO7g==}
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -2655,8 +2652,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@pptb/types@1.0.8': {}
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
