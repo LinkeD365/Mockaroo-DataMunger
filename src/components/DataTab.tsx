@@ -1,7 +1,6 @@
 import React from "react";
 import { observer } from "mobx-react";
 import { ViewModel } from "../model/viewModel";
-import { dvService } from "../utils/dataverse";
 
 import {
   createTableColumn,
@@ -15,24 +14,22 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { DataRow } from "../model/Data";
-import { ConfigField } from "../model/Config";
 
 interface DataTabProps {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dvService: dvService;
+  dvService: any;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
 export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
-  const { connection, dvService, isLoading, viewModel, onLog } = props;
+  const { viewModel } = props;
   const [dataCols] = React.useState<string[]>(Object.getOwnPropertyNames(viewModel.data?.[0] || {}).filter((col) => col !== "@odata.type"));
 
   React.useEffect(() => {
     console.log("Data changed:", Object.getOwnPropertyNames(viewModel.data?.[0] || {}));
     const cols = Object.getOwnPropertyNames(viewModel.data?.[0] || {}).filter((col) => col !== "@odata.type");
-    ;
     const rows: DataRow[] = [];
 
     // Build rows only when we have a matching config field; skip columns without config to satisfy DataRow parameter type.
@@ -65,7 +62,6 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
 
   return (
     <div>
-      {dataColumns.length} || {dataCols.length}
       <DataGrid columns={dataColumns()} items={viewModel.data || []}>
         <DataGridHeader
           style={{
@@ -81,9 +77,9 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
             {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
           </DataGridRow>
         </DataGridHeader>
-        <DataGridBody<ConfigField>>
+        <DataGridBody<any>>
           {({ item, rowId }) => (
-            <DataGridRow<ConfigField> key={rowId}>
+            <DataGridRow<any> key={rowId}>
               {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
             </DataGridRow>
           )}

@@ -14,7 +14,7 @@ export class Config {
   get jsonString(): string {
     return JSON.stringify(
       this.fields
-        ?.filter((field) => field.include )
+        ?.filter((field) => field.include)
         .map((field) => ({ name: field.logicalName, type: field.selectedMock?.name || "" })) ?? []
     );
   }
@@ -52,7 +52,7 @@ export class ConfigField {
         return "integer";
       case "DateTime":
         return "datetime";
-      case "boolean":
+      case "Boolean":
         return "Boolean";
       default:
         return "Unknown";
