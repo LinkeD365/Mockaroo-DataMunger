@@ -45,7 +45,7 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
     });
     viewModel.dataRows = rows;
     console.log("Data rows constructed:", viewModel.dataRows);
-  }, [viewModel.data?.length, viewModel.config?.fields]);
+  }, [viewModel.data, viewModel.config?.fields]);
 
   function dataColumns(): TableColumnDefinition<any>[] {
     //const cols = Object.getOwnPropertyNames(viewModel.data?.[0] || {});
