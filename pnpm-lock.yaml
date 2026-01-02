@@ -11,6 +11,9 @@ importers:
       '@fluentui/react-components':
         specifier: ^9.72.8
         version: 9.72.8(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(scheduler@0.23.2)
+      '@fluentui/react-icons':
+        specifier: ^2.0.316
+        version: 2.0.316(react@18.3.1)
       mobx:
         specifier: ^6.15.0
         version: 6.15.0
@@ -25,8 +28,8 @@ importers:
         version: 18.3.1(react@18.3.1)
     devDependencies:
       '@pptb/types':
-        specifier: ^1.0.1
-        version: 1.0.8
+        specifier: link:..\desktop-app\packages
+        version: link:../desktop-app/packages
       '@types/react':
         specifier: ^18.3.12
         version: 18.3.27
@@ -851,9 +854,6 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
-
-  '@pptb/types@1.0.8':
-    resolution: {integrity: sha512-qGjif4qCFvGsHFB4Ly0xcvfTMkr+IB9WXh2/Zn0/C//orX6IBpnlSXn2D3xUjj69a9hAiqjVMhNJ1fpJJNqO7g==}
 
   '@rolldown/pluginutils@1.0.0-beta.27':
     resolution: {integrity: sha512-+d0F4MKMCbeVUJwG96uQ4SgAznZNSq93I3V+9NHA4OpvqG8mRCpGdKmK8l/dl02h2CCDHwW2FqilnTyDcAnqjA==}
@@ -2652,8 +2652,6 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
-
-  '@pptb/types@1.0.8': {}
 
   '@rolldown/pluginutils@1.0.0-beta.27': {}
 
