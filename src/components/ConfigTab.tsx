@@ -48,7 +48,7 @@ interface ConfigTabProps {
 }
 
 export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => {
-  const { connection, dvService, isLoading, viewModel, onLog } = props;
+  const { connection, dvService, viewModel, onLog } = props;
   const styles = useStyles();
   const [loadingConfig, setLoadingConfig] = React.useState<boolean>(false);
 
@@ -251,7 +251,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               placeholder="Number of records"
               value={viewModel.rowCount.toString()}
               style={{ width: "80px" }}
-              onChange={(e) => {viewModel.rowCount = parseInt(e.target.value);}}  
+              onChange={(e) => { viewModel.rowCount = parseInt(e.target.value); }}
             />
           </Field>
         </ToolbarGroup>

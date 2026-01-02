@@ -8,6 +8,6 @@ export class DataRow {
   constructor(field: ConfigField, value: any) {
     this.field = field;
     this.value = value;
-    makeAutoObservable;
+    makeAutoObservable(this);
   }
 }

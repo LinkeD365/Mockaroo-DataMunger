@@ -15,7 +15,6 @@ import {
   tokens,
 } from "@fluentui/react-components";
 import { DataRow } from "../model/Data";
-import { ConfigField } from "../model/Config";
 
 interface DataTabProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -26,13 +25,12 @@ interface DataTabProps {
 }
 
 export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
-  const { connection, dvService, isLoading, viewModel, onLog } = props;
+  const { viewModel } = props;
   const [dataCols] = React.useState<string[]>(Object.getOwnPropertyNames(viewModel.data?.[0] || {}).filter((col) => col !== "@odata.type"));
 
   React.useEffect(() => {
     console.log("Data changed:", Object.getOwnPropertyNames(viewModel.data?.[0] || {}));
     const cols = Object.getOwnPropertyNames(viewModel.data?.[0] || {}).filter((col) => col !== "@odata.type");
-    ;
     const rows: DataRow[] = [];
 
     // Build rows only when we have a matching config field; skip columns without config to satisfy DataRow parameter type.
@@ -47,6 +45,8 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
     console.log("Data rows constructed:", viewModel.dataRows);
   }, [viewModel.data, viewModel.config?.fields]);
 
+  // Using 'any' type for data items because they are dynamically generated from Mockaroo API
+  // with different schemas based on user-selected fields
   function dataColumns(): TableColumnDefinition<any>[] {
     //const cols = Object.getOwnPropertyNames(viewModel.data?.[0] || {});
     return dataCols.map((colName) =>
@@ -65,7 +65,6 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
 
   return (
     <div>
-      {dataColumns.length} || {dataCols.length}
       <DataGrid columns={dataColumns()} items={viewModel.data || []}>
         <DataGridHeader
           style={{
@@ -81,9 +80,10 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
             {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
           </DataGridRow>
         </DataGridHeader>
-        <DataGridBody<ConfigField>>
+        {/* Using 'any' type because data items have dynamic schemas from Mockaroo API */}
+        <DataGridBody<any>>
           {({ item, rowId }) => (
-            <DataGridRow<ConfigField> key={rowId}>
+            <DataGridRow<any> key={rowId}>
               {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
             </DataGridRow>
           )}
