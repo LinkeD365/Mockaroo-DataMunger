@@ -34,6 +34,22 @@ Install dependencies:
 npm install
 ```
 
+## Configuration
+
+This tool requires a Mockaroo API key to generate mock data. 
+
+1. Get your free API key from [Mockaroo](https://www.mockaroo.com/)
+2. Create a `.env` file in the root directory (or copy `.env.example`):
+   ```bash
+   cp .env.example .env
+   ```
+3. Add your API key to the `.env` file:
+   ```
+   VITE_MOCKAROO_API_KEY=your_api_key_here
+   ```
+
+**Note:** The `.env` file is ignored by git to keep your API key secure. Never commit your actual API key to the repository.
+
 ## Development
 
 Start development server with HMR:
