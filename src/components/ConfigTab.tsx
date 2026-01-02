@@ -150,7 +150,6 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
                 updateItem(item);
               }}
             />
-            {item.detailsRetrieved} {item.fieldDetails.length}
           </div>
         );
       },
