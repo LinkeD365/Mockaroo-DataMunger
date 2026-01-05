@@ -75,9 +75,11 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
                             type={isNumber ? "number" : "text"}
                             value={paramValues[paramName] ?? paramDefault ?? ""}
                             onChange={(e) => {
-                              const value = isNumber 
-                                ? (e.target.value ? parseFloat(e.target.value) || 0 : 0)
-                                : e.target.value;
+                              let value: any = e.target.value;
+                              if (isNumber) {
+                                const numValue = parseFloat(e.target.value);
+                                value = isNaN(numValue) ? 0 : numValue;
+                              }
                               setParamValues({ ...paramValues, [paramName]: value });
                             }}
                           />
