@@ -22,7 +22,7 @@ export class mockarooService {
 
   async getMockData(recordCount: number, configJson: string, apiKey: string): Promise<any[]> {
     const trimmedApiKey = apiKey.trim();
-    if (!trimmedApiKey || trimmedApiKey.length === 0) {
+    if (!trimmedApiKey) {
       this.onLog("Mockaroo API key is not configured. Please enter your API key.", "error");
       throw new Error("Mockaroo API key is not configured.");
     }
