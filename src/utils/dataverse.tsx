@@ -67,14 +67,24 @@ export class dvService {
 
       this.onLog(`Attributes loaded for table: ${selectedTable.label}`, "success");
       console.log("Attributes retrieved:", entityMeta);
-      const configFields: ConfigField[] = entityMeta.value.map((attr: any) => {
-        return new ConfigField(
-          attr.LogicalName,
-          attr.MetadataId,
-          attr.AttributeType,
-          attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName
+      const configFields: ConfigField[] = entityMeta.value
+        .map((attr: any) => {
+          return new ConfigField(
+        attr.LogicalName,
+        attr.MetadataId,
+        attr.AttributeType,
+        attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName
+          );
+        })
+        .filter(
+          (field: ConfigField) =>
+        field.type !== "Virtual" &&
+        field.type !== "Customer" &&
+        field.type !== "Owner" &&
+        field.type !== "Uniqueidentifier" &&
+        field.displayName &&
+        !field.displayName.toLowerCase().includes("deprecated")
         );
-      });
       const configObj = new Config(
         new Table(selectedTable.logical, selectedTable.id, selectedTable.label),
         configFields.sort((a, b) => a.displayName.localeCompare(b.displayName))
@@ -101,7 +111,7 @@ export class dvService {
         console.log("Fetching string field metadata from URL:", url);
         const stringMeta = await this.dvApi.queryData(url);
         console.log("String field metadata retrieved:", stringMeta);
-        return [{ name: "Max Length", value: String(stringMeta.MaxLength ?? "") }];
+        return [{ name: "Max Length", value: String(stringMeta.value ?? "") }];
     }
     return [];
   }

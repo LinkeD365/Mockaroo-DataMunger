@@ -32,6 +32,7 @@ function App() {
         case "settings:updated":
           console.log("Theme or settings updated, refreshing theme");
           const theme = await window.toolboxAPI.utils.getCurrentTheme();
+          document.body.dataset.agThemeMode = theme;
           setTheme(theme);
           break;
       }
@@ -67,6 +68,7 @@ function App() {
     (async () => {
       const currentTheme = await window.toolboxAPI.utils.getCurrentTheme();
       setTheme(currentTheme);
+      document.body.dataset.agThemeMode = currentTheme;
     })();
   }, []);
   return (
