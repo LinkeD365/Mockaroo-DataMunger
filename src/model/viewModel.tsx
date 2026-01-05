@@ -10,6 +10,7 @@ export class ViewModel {
   data?: any[];
   dataRows?: DataRow[];
   rowCount: number = 100;
+  mockarooApiKey: string = "";
   // Define your observable properties here
   constructor() {
     makeAutoObservable(this);
