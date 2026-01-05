@@ -18,7 +18,7 @@ export class Config {
         .map((field) => ({
           name: field.logicalName,
           type: field.selectedMock?.name || "",
-          percentBlank: field.percBlank,
+          percBlank: field.percBlank,
         })) ?? []
     );
   }

@@ -111,7 +111,8 @@ export class dvService {
         console.log("Fetching string field metadata from URL:", url);
         const stringMeta = await this.dvApi.queryData(url);
         console.log("String field metadata retrieved:", stringMeta);
-        return [{ name: "Max Length", value: String(stringMeta.value ?? "") }];
+        const maxLength = stringMeta?.MaxLength ?? "";
+        return [{ name: "Max Length", value: String(maxLength) }];
     }
     return [];
   }

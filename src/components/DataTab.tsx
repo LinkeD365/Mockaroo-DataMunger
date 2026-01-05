@@ -15,7 +15,7 @@ import {
   themeQuartz,
   ColDef,
 } from "ag-grid-community";
-import { AgGridReact, CustomCellRendererProps, CustomInnerHeaderProps } from "ag-grid-react";
+import { AgGridReact } from "ag-grid-react";
 
 ModuleRegistry.registerModules([TextFilterModule, ClientSideRowModelModule, CheckboxEditorModule, NumberEditorModule]);
 
@@ -31,9 +31,6 @@ const myTheme = themeQuartz.withParams({
 });
 export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
   const { viewModel } = props;
-  const [dataCols] = React.useState<ConfigField[]>(
-    viewModel.config?.fields?.filter((field) => field.include && field.selectedMock) || []
-  );
 
   const [agCols] = React.useState<ColDef<DataRow>[]>(
     viewModel.config?.fields?.filter((field) => field.include && field.selectedMock)?.map((configCol) => ({
@@ -42,7 +39,7 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
       sortable: true,
       filter: true,
       resizable: true,
-      flex:1,
+      flex: 1,
       width: 200,
     })) || []
   );
@@ -69,6 +66,5 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
       <div style={{ width: "98vw", height: "85vh" }}>
         <AgGridReact<DataRow> theme={myTheme} rowData={viewModel.data || []} columnDefs={agCols} domLayout="normal" />
       </div>
-     
   );
 });
