@@ -5,6 +5,10 @@ interface mockarooServiceProps {
   dataverse: dvService;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
+
+// Mockaroo API keys are typically 8 characters long (hexadecimal format)
+const MIN_API_KEY_LENGTH = 8;
+
 export class mockarooService {
   connection: ToolBoxAPI.DataverseConnection | null;
   dataverse: dvService;
@@ -17,16 +21,16 @@ export class mockarooService {
   }
 
   async getMockData(recordCount: number, configJson: string, apiKey: string): Promise<any[]> {
-    if (!apiKey || apiKey.trim().length === 0) {
+    const trimmedApiKey = apiKey.trim();
+    if (!trimmedApiKey || trimmedApiKey.length === 0) {
       this.onLog("Mockaroo API key is not configured. Please enter your API key.", "error");
       throw new Error("Mockaroo API key is not configured.");
     }
-    // Mockaroo API keys are typically 8 characters long (hexadecimal format)
-    if (apiKey.trim().length < 8) {
+    if (trimmedApiKey.length < MIN_API_KEY_LENGTH) {
       this.onLog("Mockaroo API key appears to be invalid. Please check your API key.", "error");
       throw new Error("Mockaroo API key appears to be invalid.");
     }
-    const url = `https://api.mockaroo.com/api/generate.json?key=${encodeURIComponent(apiKey)}&count=${recordCount}`;
+    const url = `https://api.mockaroo.com/api/generate.json?key=${encodeURIComponent(trimmedApiKey)}&count=${recordCount}`;
     console.log("configJson:", configJson);
     const request = new Request(url, {
       method: "POST",
