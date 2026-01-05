@@ -12,12 +12,11 @@ import {
   Input,
   Checkbox,
 } from "@fluentui/react-components";
-import { ConfigField, MockType } from "../model/Config";
+import { ConfigField } from "../model/Config";
 import { SettingsFilled } from "@fluentui/react-icons";
 
 interface MockOptionsSelectorProps {
   field: ConfigField;
-  mockTypes: MockType[];
   onUpdate: (field: ConfigField) => void;
 }
 
@@ -76,7 +75,9 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
                             type={isNumber ? "number" : "text"}
                             value={paramValues[paramName] ?? paramDefault ?? ""}
                             onChange={(e) => {
-                              const value = isNumber ? parseFloat(e.target.value) : e.target.value;
+                              const value = isNumber 
+                                ? (e.target.value ? parseFloat(e.target.value) || 0 : 0)
+                                : e.target.value;
                               setParamValues({ ...paramValues, [paramName]: value });
                             }}
                           />

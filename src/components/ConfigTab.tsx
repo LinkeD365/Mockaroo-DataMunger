@@ -115,7 +115,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
       field: "selectedMock.parameters",
       sortable: false,
        cellRenderer: (params: CustomCellRendererProps<ConfigField>) => (
-        <MockOptionsSelector field={params.data} mockTypes={viewModel.mockTypes} onUpdate={updateItem} />
+        <MockOptionsSelector field={params.data} onUpdate={updateItem} />
       ),
     },
     {
