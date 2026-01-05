@@ -21,7 +21,8 @@ export class mockarooService {
       this.onLog("Mockaroo API key is not configured. Please enter your API key.", "error");
       throw new Error("Mockaroo API key is not configured.");
     }
-    if (apiKey.length < 8) {
+    // Mockaroo API keys are typically 8 characters long (hexadecimal format)
+    if (apiKey.trim().length < 8) {
       this.onLog("Mockaroo API key appears to be invalid. Please check your API key.", "error");
       throw new Error("Mockaroo API key appears to be invalid.");
     }
