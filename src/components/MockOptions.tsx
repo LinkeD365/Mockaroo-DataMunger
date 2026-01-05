@@ -8,6 +8,11 @@ import {
   DialogContent,
   DialogSurface,
   DialogTitle,
+  Field,
+  InfoLabel,
+  Input,
+  Label,
+  LabelProps,
 } from "@fluentui/react-components";
 import { ConfigField, MockType } from "../model/Config";
 import { SettingsFilled } from "@fluentui/react-icons";
@@ -21,12 +26,35 @@ interface MockOptionsSelectorProps {
 export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): React.JSX.Element => {
   const { field, mockTypes, onUpdate } = props;
   const [openConfig, setOpenConfig] = React.useState(false);
+
   const configDialog = (
     <Dialog open={openConfig} onOpenChange={(_e, data) => setOpenConfig(data.open)}>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>Configure Mock Options</DialogTitle>
-          <DialogContent>{field.selectedMock?.name}</DialogContent>
+          <DialogTitle>Configure Mock Options - {field.selectedMock?.name}</DialogTitle>
+          <DialogContent>
+            {field.selectedMock?.parameters?.map((param) => (
+              <div key={param.name} style={{ marginBottom: "12px" }}>
+                <Field
+                  label={{
+                    children: (_: unknown, props: LabelProps) => (
+                      <InfoLabel {...props} info={param.description || ""}>
+                        {param.name}
+                      </InfoLabel>
+                    ),
+                  }}
+                >
+                  <Input type="text" value={param.value || ""} />
+                </Field>
+                {/* <Label required>{param.name}</Label>
+                <Input
+                  type="text"
+                  value={param.value || ""}
+                    />
+                <Label size="small">{param.description || ""}</Label> */}
+              </div>
+            ))}
+          </DialogContent>
           <DialogActions>
             <Button appearance="primary">Save</Button>
             <Button appearance="secondary" onClick={() => setOpenConfig(false)}>
@@ -43,7 +71,7 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
       <Button
         onClick={() => setOpenConfig(true)}
         icon={<SettingsFilled />}
-        disabled={!field.selectedMock}
+        disabled={!field.selectedMock || (field.selectedMock.parameters && field.selectedMock.parameters.length === 0)}
         size="small"
         style={{ marginLeft: "8px" }}
       />

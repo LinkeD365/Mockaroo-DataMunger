@@ -79,6 +79,8 @@ export class MockType {
 export class MockParameter {
   name: string;
   type: string;
+  value?: string;
+  description?: string;
   default?: string;
 
   constructor(name: string, type: string) {
