@@ -228,7 +228,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               type="password"
               placeholder="Enter API key"
               value={viewModel.mockarooApiKey}
-              style={{ width: "200px" }}
+              style={{ width: "150px" }}
               onChange={(e) => {
                 viewModel.mockarooApiKey = e.target.value;
               }}

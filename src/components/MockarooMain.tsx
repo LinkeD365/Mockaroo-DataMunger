@@ -211,7 +211,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
             <Button
               className={styles.button}
               icon={<DatabaseArrowUpFilled />}
-              disabled={(viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0}
+              disabled={(viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0 || !viewModel.mockarooApiKey}
               onClick={getData}
             />
           </Tooltip>
