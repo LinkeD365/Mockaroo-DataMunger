@@ -6,23 +6,29 @@ import { Config, ConfigField } from "../model/Config";
 import {
   Combobox,
   ComboboxProps,
-  createTableColumn,
-  DataGrid,
-  DataGridBody,
-  DataGridCell,
-  DataGridHeader,
-  DataGridHeaderCell,
-  DataGridRow,
   Field,
   Input,
   makeStyles,
   Option,
-  Switch,
-  TableColumnDefinition,
-  tokens,
   Toolbar,
   ToolbarGroup,
 } from "@fluentui/react-components";
+
+import {
+  ModuleRegistry,
+  TextFilterModule,
+  ClientSideRowModelModule,
+  CheckboxEditorModule,
+  NumberEditorModule,
+  themeQuartz,
+  ColDef,
+  INumberCellEditorParams,
+} from "ag-grid-community";
+import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
+import { MockTypeSelector } from "./MockSelector";
+import { MockOptionsSelector } from "./MockOptions";
+
+ModuleRegistry.registerModules([TextFilterModule, ClientSideRowModelModule, CheckboxEditorModule, NumberEditorModule]);
 
 const useStyles = makeStyles({
   listbox: {
@@ -46,11 +52,86 @@ interface ConfigTabProps {
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
+const myTheme = themeQuartz.withParams({
+  headerHeight: "30px",
+});
 
 export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => {
   const { connection, dvService, viewModel, onLog } = props;
   const styles = useStyles();
   const [loadingConfig, setLoadingConfig] = React.useState<boolean>(false);
+  const [colDefs] = React.useState<ColDef<ConfigField>[]>([
+    {
+      headerName: "Column Name",
+      field: "displayName",
+      sortable: true,
+      sort: "asc",
+      filter: true,
+      resizable: true,
+      width: 200,
+    },
+    {
+      headerName: "Logical",
+      field: "logicalName",
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 200,
+    },
+    {
+      headerName: "Type",
+      field: "type",
+      sortable: true,
+      filter: true,
+      resizable: true,
+      width: 200,
+    },
+    {
+      headerName: "Include",
+      field: "include",
+      sortable: true,
+      filter: true,
+      resizable: false,
+      width: 100,
+      cellEditor: "agCheckboxCellEditor",
+      cellRenderer: "agCheckboxCellRenderer",
+      editable: true,
+    },
+    {
+      headerName: "Mock Type",
+      field: "selectedMock.name",
+      sortable: true,
+      filter: true,
+      minWidth: 200,
+      resizable: true,
+      flex: 1,
+      cellRenderer: (params: CustomCellRendererProps<ConfigField>) => (
+        <MockTypeSelector field={params.data} mockTypes={viewModel.mockTypes} onUpdate={updateItem} />
+      ),
+    },
+    {
+      headerName: "Config",
+      headerTooltip: "Additional configuration for the selected mock type",
+      field: "selectedMock.parameters",
+      sortable: false,
+       cellRenderer: (params: CustomCellRendererProps<ConfigField>) => (
+        <MockOptionsSelector field={params.data} onUpdate={updateItem} />
+      ),
+    },
+    {
+      headerName: "Perc % Blank",
+      field: "percBlank",
+      headerTooltip: "Percentage of blank values to generate for this field",
+      sortable: true,
+      width: 100,
+      cellEditor: "agNumberCellEditor",
+      cellEditorParams: {
+        min: 0,
+        max: 100,
+      } as INumberCellEditorParams,
+      editable: (params) => params.data?.selectedMock !== undefined,
+    },
+  ]);
 
   React.useEffect(() => {
     const loadConfig = async () => {
@@ -101,119 +182,17 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   const onOptionSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
     viewModel.selectedTableName = data.optionValue as string;
   };
-  const configColumns: TableColumnDefinition<ConfigField>[] = [
-    createTableColumn<ConfigField>({
-      columnId: "fieldName",
-      compare: (a, b) => a.displayName.localeCompare(b.displayName),
-      renderHeaderCell: () => {
-        return "Field Name";
-      },
-      renderCell: (item) => {
-        return <div style={{ verticalAlign: "top" }}>{item.displayName}</div>;
-      },
-    }),
-    createTableColumn<ConfigField>({
-      columnId: "logicalName",
-      compare: (a, b) => a.logicalName.localeCompare(b.logicalName),
-      renderHeaderCell: () => {
-        return "Logical Name";
-      },
-      renderCell: (item) => {
-        return <div style={{ verticalAlign: "top" }}>{item.logicalName}</div>;
-      },
-    }),
-    createTableColumn<ConfigField>({
-      columnId: "fieldType",
-      compare: (a, b) => a.type.localeCompare(b.type),
-      renderHeaderCell: () => {
-        return "Field Type";
-      },
-      renderCell: (item) => {
-        return <div style={{ verticalAlign: "top" }}>{item.type}</div>;
-      },
-    }),
-    createTableColumn<ConfigField>({
-      columnId: "include",
-      compare: (a, b) => (a.include === b.include ? 0 : a.include ? -1 : 1),
-      renderHeaderCell: () => {
-        return "Include";
-      },
-      renderCell: (item) => {
-        return (
-          <div style={{ verticalAlign: "top" }}>
-            <Switch
-              key={item.logicalName}
-              checked={item.include}
-              size="small"
-              onChange={() => {
-                item.include = !item.include;
-                updateItem(item);
-              }}
-            />
-          </div>
-        );
-      },
-    }),
-    createTableColumn<ConfigField>({
-      columnId: "mockType",
-      renderHeaderCell: () => {
-        return "Mock Type";
-      },
-      renderCell: (item) => {
-        return (
-          <div style={{ verticalAlign: "top" }}>
-            <Combobox
-              disabled={!item.include}
-              size="small"
-              placeholder="Select mock type"
-              value={item.selectedMock?.name || ""}
-              onOptionSelect={(_e, data) => {
-                const selected = viewModel.mockTypes.find((mt) => mt.name === data.optionValue);
-                if (selected) {
-                  item.selectedMock = selected;
-                  updateItem(item);
-                }
-              }}
-            >
-              {viewModel.mockTypes
-                .filter((mt) => mt.type === item.mockMatch)
-                .map((mt) => (
-                  <Option key={mt.name} value={mt.name}>
-                    {mt.name}
-                  </Option>
-                ))}{" "}
-            </Combobox>
-          </div>
-        );
-      },
-    }),
-  ];
 
   const configGrid = (
     <>
-      <DataGrid columns={configColumns} items={viewModel.config?.fields || []} sortable resizableColumns>
-        <DataGridHeader
-          style={{
-            position: "sticky",
-            top: 0,
-            zIndex: 10,
-            backgroundColor: tokens.colorNeutralBackground2,
-            boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
-          }}
-        >
-          {" "}
-          <DataGridRow>
-            {({ renderHeaderCell }) => <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>}
-          </DataGridRow>
-        </DataGridHeader>
-        <DataGridBody<ConfigField>>
-          {({ item, rowId }) => (
-            <DataGridRow<ConfigField> key={rowId}>
-              {({ renderCell }) => <DataGridCell>{renderCell(item)}</DataGridCell>}
-            </DataGridRow>
-          )}
-        </DataGridBody>
-      </DataGrid>
+      <div style={{ width: "98vw", height: "85vh" }}>
+        <AgGridReact<ConfigField>
+          theme={myTheme}
+          rowData={viewModel.config?.fields || []}
+          columnDefs={colDefs}
+          domLayout="normal"
+        />
+      </div>
     </>
   );
   const tablesList = (
@@ -243,6 +222,20 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
           </Combobox>
         </ToolbarGroup>
         <ToolbarGroup>
+          <Field size="small" label="Mockaroo API Key ">
+            <Input
+              size="small"
+              type="password"
+              placeholder="Enter API key"
+              value={viewModel.mockarooApiKey}
+              style={{ width: "150px" }}
+              onChange={(e) => {
+                viewModel.mockarooApiKey = e.target.value;
+              }}
+            />
+          </Field>
+        </ToolbarGroup>
+        <ToolbarGroup>
           <Field size="small" label="No. of Rows ">
             <Input
               size="small"
@@ -251,7 +244,9 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               placeholder="Number of records"
               value={viewModel.rowCount.toString()}
               style={{ width: "80px" }}
-              onChange={(e) => { viewModel.rowCount = parseInt(e.target.value); }}
+              onChange={(e) => {
+                viewModel.rowCount = parseInt(e.target.value);
+              }}
             />
           </Field>
         </ToolbarGroup>

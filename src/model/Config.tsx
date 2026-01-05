@@ -14,8 +14,12 @@ export class Config {
   get jsonString(): string {
     return JSON.stringify(
       this.fields
-        ?.filter((field) => field.include)
-        .map((field) => ({ name: field.logicalName, type: field.selectedMock?.name || "" })) ?? []
+        ?.filter((field) => field.include && field.selectedMock)
+        .map((field) => ({
+          name: field.logicalName,
+          type: field.selectedMock?.name || "",
+          percBlank: field.percBlank,
+        })) ?? []
     );
   }
 }
@@ -30,7 +34,7 @@ export class ConfigField {
   detailsRetrieved: boolean = false;
   fieldDetails: { name: string; value: string }[] = [];
   selectedMock?: MockType;
-
+  percBlank: number = 0;
   constructor(logicalName: string, metadataId: string, type: string, displayName: string) {
     this.logicalName = logicalName;
     this.metadataId = metadataId;
@@ -75,6 +79,8 @@ export class MockType {
 export class MockParameter {
   name: string;
   type: string;
+  value?: string;
+  description?: string;
   default?: string;
 
   constructor(name: string, type: string) {
