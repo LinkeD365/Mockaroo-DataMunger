@@ -16,9 +16,12 @@ export class mockarooService {
     this.onLog = props.onLog;
   }
 
-  async getMockData(recordCount: number, configJson: string): Promise<any[]> {
-    const url = `https://api.mockaroo.com/api/generate.json?key=d2a8ce90&count=${recordCount}`;
-    //   const url = `https://api.mockaroo.com/api/generate.json?key=${apiKey}&count=${recordCount}`;
+  async getMockData(recordCount: number, configJson: string, apiKey: string): Promise<any[]> {
+    if (!apiKey) {
+      this.onLog("Mockaroo API key is not configured. Please enter your API key in the configuration.", "error");
+      throw new Error("Mockaroo API key is not configured.");
+    }
+    const url = `https://api.mockaroo.com/api/generate.json?key=${apiKey}&count=${recordCount}`;
     console.log("configJson:", configJson);
     const request = new Request(url, {
       method: "POST",

@@ -24,7 +24,7 @@ import {
   ColDef,
   INumberCellEditorParams,
 } from "ag-grid-community";
-import { AgGridReact, CustomCellRendererProps, CustomInnerHeaderProps } from "ag-grid-react";
+import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
 import { MockTypeSelector } from "./MockSelector";
 import { MockOptionsSelector } from "./MockOptions";
 
@@ -105,7 +105,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
       minWidth: 200,
       resizable: true,
       flex: 1,
-      cellRenderer: (params: { data: ConfigField }) => (
+      cellRenderer: (params: CustomCellRendererProps<ConfigField>) => (
         <MockTypeSelector field={params.data} mockTypes={viewModel.mockTypes} onUpdate={updateItem} />
       ),
     },
@@ -114,7 +114,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
       headerTooltip: "Additional configuration for the selected mock type",
       field: "selectedMock.parameters",
       sortable: false,
-       cellRenderer: (params: { data: ConfigField }) => (
+       cellRenderer: (params: CustomCellRendererProps<ConfigField>) => (
         <MockOptionsSelector field={params.data} mockTypes={viewModel.mockTypes} onUpdate={updateItem} />
       ),
     },
@@ -220,6 +220,20 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
           >
             {tablesList}
           </Combobox>
+        </ToolbarGroup>
+        <ToolbarGroup>
+          <Field size="small" label="Mockaroo API Key ">
+            <Input
+              size="small"
+              type="password"
+              placeholder="Enter API key"
+              value={viewModel.mockarooApiKey}
+              style={{ width: "200px" }}
+              onChange={(e) => {
+                viewModel.mockarooApiKey = e.target.value;
+              }}
+            />
+          </Field>
         </ToolbarGroup>
         <ToolbarGroup>
           <Field size="small" label="No. of Rows ">

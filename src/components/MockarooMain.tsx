@@ -106,7 +106,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   };
 
   function getData(): void {
-    mckSvc.getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "").then((data) => {
+    mckSvc.getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "", viewModel.mockarooApiKey).then((data) => {
       console.log("Mock data received from Mockaroo:", data);
       viewModel.data = data;
       viewModel.data = viewModel.data.map((item) => ({
