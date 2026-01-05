@@ -222,6 +222,20 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
           </Combobox>
         </ToolbarGroup>
         <ToolbarGroup>
+          <Field size="small" label="Mockaroo API Key ">
+            <Input
+              size="small"
+              type="password"
+              placeholder="Enter API key"
+              value={viewModel.mockarooApiKey}
+              style={{ width: "150px" }}
+              onChange={(e) => {
+                viewModel.mockarooApiKey = e.target.value;
+              }}
+            />
+          </Field>
+        </ToolbarGroup>
+        <ToolbarGroup>
           <Field size="small" label="No. of Rows ">
             <Input
               size="small"
