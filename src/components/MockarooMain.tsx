@@ -148,6 +148,14 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
         setSelectedTab("data");
         console.log("Generated Data:", viewModel.data);
         onLog(`Generated ${viewModel.data.length} mock data records`, "success");
+      })
+      .catch((err) => {
+        onLog(`Failed to generate mock data: ${err.message}`, "error");
+        window.toolboxAPI.utils.showNotification({
+          title: "Mock Data Generation Failed",
+          body: `There was an error generating mock data: ${err.message}`,
+          type: "error",
+        });
       });
   }
 
