@@ -1,5 +1,5 @@
 import { toJS } from "mobx";
-import { Config, ConfigField } from "../model/Config";
+import { ChoiceValue, Config, ConfigField } from "../model/Config";
 import { Table } from "../model/viewModel";
 
 interface dvServiceProps {
@@ -23,7 +23,7 @@ export class dvService {
       this.onLog("No connection available", "error");
       throw new Error("No connection available");
     }
-    console.log("Loading tables from Dataverse...");
+
     try {
       this.onLog("Loading tables from Dataverse...", "info");
       const tablesMetadata = await this.dvApi.getAllEntitiesMetadata([
@@ -32,7 +32,7 @@ export class dvService {
         "DisplayName",
         "EntitySetName",
       ]);
-      console.log("Tables metadata retrieved:", tablesMetadata);
+
       const tables: Table[] = tablesMetadata.value.map((tableMeta: any) => {
         const table = {
           logical: tableMeta.LogicalName,
@@ -66,30 +66,30 @@ export class dvService {
       ]);
 
       this.onLog(`Attributes loaded for table: ${selectedTable.label}`, "success");
-      console.log("Attributes retrieved:", entityMeta);
+
       const configFields: ConfigField[] = entityMeta.value
         .map((attr: any) => {
           return new ConfigField(
-        attr.LogicalName,
-        attr.MetadataId,
-        attr.AttributeType,
-        attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName
+            attr.LogicalName,
+            attr.MetadataId,
+            attr.AttributeType,
+            attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName
           );
         })
         .filter(
           (field: ConfigField) =>
-        field.type !== "Virtual" &&
-        field.type !== "Customer" &&
-        field.type !== "Owner" &&
-        field.type !== "Uniqueidentifier" &&
-        field.displayName &&
-        !field.displayName.toLowerCase().includes("deprecated")
+            field.type !== "Virtual" &&
+            field.type !== "Customer" &&
+            field.type !== "Owner" &&
+            field.type !== "Uniqueidentifier" &&
+            field.displayName &&
+            !field.displayName.toLowerCase().includes("deprecated")
         );
       const configObj = new Config(
         new Table(selectedTable.logical, selectedTable.id, selectedTable.label),
         configFields.sort((a, b) => a.displayName.localeCompare(b.displayName))
       );
-      console.log("Configuration object created:", configObj);
+
       return configObj;
     } catch (error) {
       this.onLog(`Error loading configuration: ${error}`, "error");
@@ -99,7 +99,7 @@ export class dvService {
   }
 
   async loadFieldDetails(table: Table, field: ConfigField): Promise<{ name: string; value: string }[]> {
-    if (!this.connection || !this.connection.isActive) {
+    if (!this.connection) {
       this.onLog("No connection available", "error");
       throw new Error("No connection available");
     }
@@ -108,26 +108,35 @@ export class dvService {
       case "String":
       case "Memo":
         url += "/Microsoft.Dynamics.CRM.StringAttributeMetadata?$select=MaxLength";
-        console.log("Fetching string field metadata from URL:", url);
+
         const stringMeta = await this.dvApi.queryData(url);
-        console.log("String field metadata retrieved:", stringMeta);
-        const maxLength = stringMeta?.MaxLength ?? "";
-        return [{ name: "Max Length", value: String(maxLength) }];
     }
     return [];
   }
 
-  async createData(table?: Table, data?: any[]): Promise<void> {
+  async createData(table: Table, fields: ConfigField[], data: any[]): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (!this.connection) {
         this.onLog("No connection available", "error");
-        throw new Error("No connection available");
+        reject(new Error("No connection available"));
       }
       if (!table || !data || data.length === 0) {
         this.onLog("No table selected or data passed for data creation", "error");
-        throw new Error("No table selected or data passed for data creation");
+        reject(new Error("No table selected or data passed for data creation"));
       }
 
+      if (!fields || fields.length === 0) {
+        this.onLog("No fields selected for data creation", "error");
+        reject(new Error("No fields selected for data creation"));
+      }
+
+      fields.filter(f => f.selectedMock?.type === "picklist").forEach(fld => {
+        data.forEach(record => {
+          record[fld.logicalName] = fld.choiceValues.find(cv => cv.label === record[fld.logicalName])?.value;
+        });
+      });
+
+      console.log("Data to be created:", toJS(data));
       const batchSize = 100;
       const batches: any[] = [];
       for (let i = 0; i < data.length; i += batchSize) {
@@ -146,5 +155,27 @@ export class dvService {
           reject(error);
         });
     });
+  }
+
+  async getChoiceValues(tableLogicalName: string, fieldLogicalName: string): Promise<ChoiceValue[]> {
+    if (!this.connection) {
+      this.onLog("No connection available", "error");
+      throw new Error("No connection available");
+    }
+    try {
+      this.onLog(`Loading picklist values for field: ${fieldLogicalName}`, "info");
+      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${fieldLogicalName}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName&$expand=OptionSet`;
+      console.log("Picklist URL:", url);
+      const picklistMeta: any = await this.dvApi.queryData(url);
+
+      const options = picklistMeta.OptionSet?.Options || [];
+      const values: ChoiceValue[] = options.map((opt: any) => new ChoiceValue(opt.Label?.UserLocalizedLabel?.Label || "", opt.Value.toString()));
+      this.onLog(`Picklist values loaded for field: ${fieldLogicalName}`, "success");
+      return values;
+    } catch (error) {
+      this.onLog(`Error loading picklist values: ${error}`, "error");
+      console.error("Error loading picklist values:", error);
+      throw error;
+    }
   }
 }

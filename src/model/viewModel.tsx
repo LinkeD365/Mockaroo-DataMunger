@@ -4,12 +4,12 @@ import { DataRow } from "./Data";
 
 export class ViewModel {
   tables: Table[] = [];
-  selectedTableName?: string;
+  selectedTable?: Table;
   mockTypes: MockType[] = [];
   config?: Config;
   data?: any[];
   dataRows?: DataRow[];
-  rowCount: number = 100;
+  rowCount: number = 10;
   mockarooApiKey: string = "";
   // Define your observable properties here
   constructor() {

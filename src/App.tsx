@@ -30,7 +30,6 @@ function App() {
           // Terminal events handled by dedicated components
           break;
         case "settings:updated":
-          console.log("Theme or settings updated, refreshing theme");
           const theme = await window.toolboxAPI.utils.getCurrentTheme();
           document.body.dataset.agThemeMode = theme;
           setTheme(theme);
@@ -47,7 +46,7 @@ function App() {
 
   const [viewModel] = useState(() => new ViewModel());
   const dvSvc = useMemo(() => {
-    console.log("Creating dvService with connection:", connection);
+    if (!connection) return null;
     return new dvService({
       connection: connection,
       dvApi: window.dataverseAPI,
@@ -56,10 +55,9 @@ function App() {
   }, [connection, addLog]);
 
   const mockarooSvc = useMemo(() => {
-    console.log("Creating mockarooService with connection:", connection);
     return new mockarooService({
       connection: connection,
-      dataverse: dvSvc,
+      dvSvc: dvSvc!,
       onLog: addLog,
     });
   }, [connection, dvSvc, addLog]);
@@ -69,6 +67,10 @@ function App() {
       const currentTheme = await window.toolboxAPI.utils.getCurrentTheme();
       setTheme(currentTheme);
       document.body.dataset.agThemeMode = currentTheme;
+      const mockarooApiKey = await window.toolboxAPI.settings.get("mockarooApiKey");
+      if (mockarooApiKey) {
+        viewModel.mockarooApiKey = mockarooApiKey;
+      }
     })();
   }, []);
   return (
@@ -76,7 +78,7 @@ function App() {
       <MockarooMain
         connection={connection}
         viewModel={viewModel}
-        dvSvc={dvSvc}
+        dvSvc={dvSvc!}
         onLog={addLog}
         isLoading={isLoading}
         mckSvc={mockarooSvc}

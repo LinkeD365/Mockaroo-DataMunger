@@ -36,7 +36,7 @@ npm install
 
 ## Configuration
 
-This tool requires a Mockaroo API key to generate mock data. 
+This tool requires a Mockaroo API key to generate mock data.
 
 1. Get your free API key from [Mockaroo](https://www.mockaroo.com/)
 2. Create a `.env` file in the root directory (or copy `.env.example`):
@@ -84,27 +84,22 @@ The tool demonstrates various ToolBox API features:
 
 ```typescript
 const context = await window.toolboxAPI.getToolContext();
-console.log(context.connectionUrl);
-console.log(context.accessToken);
 ```
 
 ### Showing Notifications
 
 ```typescript
 await window.toolboxAPI.showNotification({
-  title: 'Success',
-  body: 'Operation completed',
-  type: 'success'
+  title: "Success",
+  body: "Operation completed",
+  type: "success",
 });
 ```
 
 ### Subscribing to Events
 
 ```typescript
-window.toolboxAPI.onToolboxEvent((event, payload) => {
-  console.log('Event:', payload.event);
-  console.log('Data:', payload.data);
-});
+window.toolboxAPI.onToolboxEvent((event, payload) => {});
 ```
 
 ## License

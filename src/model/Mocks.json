@@ -1409,19 +1409,19 @@
       "parameters": [
         {
           "name": "min",
-          "type": "string|memo",
+          "type": "string",
           "description": "The minimum time in HH:MM AM/PM format.",
           "default": "12:00 AM"
         },
         {
           "name": "max",
-          "type": "string|memo",
+          "type": "string",
           "description": "The maximum time in HH:MM AM/PM format.",
           "default": "11:59 PM"
         },
         {
           "name": "format",
-          "type": "string|memo",
+          "type": "string",
           "description": "(optional) The format to output. This can be any format directive supported by ruby <a target=\"_blank\" href=\"http://www.ruby-doc.org/core-1.9.3/Time.html#method-i-strftime\">Time.strftime</a>. Defaults to ISO 8601 format. Example value: \"08:37:48\".",
           "default": "%T"
         }
@@ -1509,6 +1509,17 @@
           "default": 20
         }
       ]
+    },
+    {
+      "name": "Fixed Picklist",
+      "type": "picklist",
+      "fixed": true,
+      "useMockaroo": false
+    },
+    {
+      "name": "Random Picklist",
+      "mockName": "Custom List",
+      "type": "picklist"
     }
   ]
 }

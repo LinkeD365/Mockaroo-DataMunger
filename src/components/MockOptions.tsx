@@ -11,30 +11,86 @@ import {
   Field,
   Input,
   Checkbox,
+  List,
+  ListItem,
+  SelectionItemId,
 } from "@fluentui/react-components";
 import { ConfigField } from "../model/Config";
 import { SettingsFilled } from "@fluentui/react-icons";
+import { dvService } from "../utils/dataverse";
+import { ViewModel } from "../model/viewModel";
+
+// Only Once in your app you can set whether to enable hooks tracking or not.
+// In CRA(create-react-app) e.g. this can be done in src/index.js
 
 interface MockOptionsSelectorProps {
+  dvSvc: dvService;
   field: ConfigField;
+  vm: ViewModel;
   onUpdate: (field: ConfigField) => void;
 }
 
 export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): React.JSX.Element => {
-  const { field, onUpdate } = props;
+  const { dvSvc, field, vm, onUpdate } = props;
   const [openConfig, setOpenConfig] = React.useState(false);
   const [paramValues, setParamValues] = React.useState<Record<string, any>>({});
+  const [picklistValues, setPicklistValues] = React.useState<string[]>([]);
+  const [selectedItems, setSelectedItems] = React.useState<SelectionItemId[]>([]);
+
+  React.useEffect(() => {
+    const loadPicklistValues = async () => {
+      if (field.selectedMock?.type === "picklist") {
+        const values = await dvSvc.getChoiceValues(vm.selectedTable?.logical || "", field.logicalName);
+        field.choiceValues = values;
+        setPicklistValues(values.map((cv) => cv.label));
+        // Initialize selected items from field.selectedValues if available
+        if (field.selectedValues && field.selectedValues.length > 0) {
+          setSelectedItems(field.selectedValues);
+        }
+      }
+    };
+    loadPicklistValues();
+  }, [field.selectedMock, dvSvc, vm.selectedTable?.logical, field.logicalName]);
+
+  function saveParamters() {
+    if (field.selectedMock && field.selectedMock.parameters) {
+      field.selectedMock.parameters = field.selectedMock.parameters.map((param: any) => ({
+        ...param,
+        value: paramValues[param.name] ?? param.default,
+      }));
+    }
+    // Save selected picklist values
+    if (field.selectedMock?.type === "picklist") {
+      field.selectedValues = selectedItems as string[];
+    }
+    onUpdate(field);
+
+    setOpenConfig(false);
+  }
+
+  const pickList = (
+    <List
+      aria-label="Picklist Values"
+      selectionMode={field.selectedMock?.fixed ? "single" : "multiselect"}
+      style={{ maxHeight: "200px", overflowY: "auto" }}
+      selectedItems={selectedItems}
+      onSelectionChange={(_e, data) => setSelectedItems(data.selectedItems)}
+    >
+      {picklistValues.map((value, index) => (
+        <ListItem key={index} value={value}>
+          {value}
+        </ListItem>
+      ))}
+    </List>
+  );
 
   const configDialog = (
     <Dialog open={openConfig} onOpenChange={(_e, data) => setOpenConfig(data.open)}>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>Configure Mock Options</DialogTitle>
+          <DialogTitle>Configure Mock Options - {field.displayName}</DialogTitle>
           <DialogContent>
             <div>
-              {field.selectedMock?.name && (
-                <div style={{ marginBottom: "16px", fontWeight: 600 }}>{field.selectedMock.name}</div>
-              )}
               {Array.isArray(field.selectedMock?.parameters) &&
                 field.selectedMock.parameters.map((param: any, index: number) => {
                   const paramName = param?.name ?? `param_${index}`;
@@ -48,7 +104,7 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
 
                   return (
                     <div key={paramName} style={{ marginBottom: "12px" }}>
-                      {isBoolean ? (
+                      {isBoolean && (
                         <Checkbox
                           label={paramLabel}
                           checked={paramValues[paramName] ?? paramDefault ?? false}
@@ -56,7 +112,8 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
                             setParamValues({ ...paramValues, [paramName]: data.checked });
                           }}
                         />
-                      ) : (
+                      )}{" "}
+                      {isNumber && (
                         <Field label={paramLabel} size="small">
                           <Input
                             size="small"
@@ -76,10 +133,18 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
                     </div>
                   );
                 })}
+              {field.selectedMock?.type === "picklist" && (
+                <div>
+                  {pickList}
+                  {field.selectedValues.join(", ")}{" "}
+                </div>
+              )}
             </div>
           </DialogContent>
           <DialogActions>
-            <Button appearance="primary">Save</Button>
+            <Button appearance="primary" onClick={saveParamters}>
+              Save
+            </Button>
             <Button appearance="secondary" onClick={() => setOpenConfig(false)}>
               Cancel
             </Button>
@@ -94,10 +159,15 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
       <Button
         onClick={() => setOpenConfig(true)}
         icon={<SettingsFilled />}
-        disabled={!field.selectedMock || (field.selectedMock.parameters && field.selectedMock.parameters.length === 0)}
+        disabled={
+          !field.selectedMock ||
+          (field.selectedMock.type !== "picklist" &&
+            (!field.selectedMock.parameters || field.selectedMock.parameters.length === 0))
+        }
         size="small"
         style={{ marginLeft: "8px" }}
       />
     </div>
   );
 });
+

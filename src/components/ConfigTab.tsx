@@ -10,6 +10,7 @@ import {
   Input,
   makeStyles,
   Option,
+  Spinner,
   Toolbar,
   ToolbarGroup,
 } from "@fluentui/react-components";
@@ -47,7 +48,7 @@ const useStyles = makeStyles({
 
 interface ConfigTabProps {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dvService: dvService;
+  dvSvc: dvService;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -56,95 +57,117 @@ const myTheme = themeQuartz.withParams({
   headerHeight: "30px",
 });
 
+const MockOptSelectorMemo = React.memo(MockOptionsSelector);
+
 export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => {
-  const { connection, dvService, viewModel, onLog } = props;
+  const { connection, dvSvc, viewModel, onLog } = props;
   const styles = useStyles();
   const [loadingConfig, setLoadingConfig] = React.useState<boolean>(false);
-  const [colDefs] = React.useState<ColDef<ConfigField>[]>([
-    {
-      headerName: "Column Name",
-      field: "displayName",
-      sortable: true,
-      sort: "asc",
-      filter: true,
-      resizable: true,
-      width: 200,
-    },
-    {
-      headerName: "Logical",
-      field: "logicalName",
-      sortable: true,
-      filter: true,
-      resizable: true,
-      width: 200,
-    },
-    {
-      headerName: "Type",
-      field: "type",
-      sortable: true,
-      filter: true,
-      resizable: true,
-      width: 200,
-    },
-    {
-      headerName: "Include",
-      field: "include",
-      sortable: true,
-      filter: true,
-      resizable: false,
-      width: 100,
-      cellEditor: "agCheckboxCellEditor",
-      cellRenderer: "agCheckboxCellRenderer",
-      editable: true,
-    },
-    {
-      headerName: "Mock Type",
-      field: "selectedMock.name",
-      sortable: true,
-      filter: true,
-      minWidth: 200,
-      resizable: true,
-      flex: 1,
-      cellRenderer: (params: CustomCellRendererProps<ConfigField>) => (
-        <MockTypeSelector field={params.data} mockTypes={viewModel.mockTypes} onUpdate={updateItem} />
-      ),
-    },
-    {
-      headerName: "Config",
-      headerTooltip: "Additional configuration for the selected mock type",
-      field: "selectedMock.parameters",
-      sortable: false,
-       cellRenderer: (params: CustomCellRendererProps<ConfigField>) => (
-        <MockOptionsSelector field={params.data} onUpdate={updateItem} />
-      ),
-    },
-    {
-      headerName: "Perc % Blank",
-      field: "percBlank",
-      headerTooltip: "Percentage of blank values to generate for this field",
-      sortable: true,
-      width: 100,
-      cellEditor: "agNumberCellEditor",
-      cellEditorParams: {
-        min: 0,
-        max: 100,
-      } as INumberCellEditorParams,
-      editable: (params) => params.data?.selectedMock !== undefined,
-    },
-  ]);
+
+  const [colDefs, setColDefs] = React.useState<ColDef<ConfigField>[]>([]);
+
+  React.useEffect(() => {
+    console.log("Setting up column definitions for config grid");
+    if (!connection) return;
+    setColDefs([
+      {
+        headerName: "Column Name",
+        field: "displayName",
+        sortable: true,
+        sort: "asc",
+        filter: true,
+        resizable: true,
+        width: 200,
+      },
+      {
+        headerName: "Logical",
+        field: "logicalName",
+        sortable: true,
+        filter: true,
+        resizable: true,
+        width: 200,
+      },
+      {
+        headerName: "Type",
+        field: "type",
+        sortable: true,
+        filter: true,
+        resizable: true,
+        width: 200,
+      },
+      {
+        headerName: "Include",
+        field: "include",
+        sortable: true,
+        filter: true,
+        resizable: false,
+        width: 100,
+        cellEditor: "agCheckboxCellEditor",
+        cellRenderer: "agCheckboxCellRenderer",
+        editable: true,
+      },
+      {
+        headerName: "Mock Type",
+        field: "selectedMock.name",
+        sortable: true,
+        filter: true,
+        minWidth: 200,
+        resizable: true,
+        flex: 1,
+        cellRenderer: (params: CustomCellRendererProps<ConfigField>) =>
+          params.data ? (
+            <MockTypeSelector field={params.data} mockTypes={viewModel.mockTypes} onUpdate={updateItem} />
+          ) : null,
+      },
+      {
+        headerName: "Config",
+        headerTooltip: "Additional configuration for the selected mock type",
+        field: "selectedMock.parameters",
+        sortable: false,
+        cellRenderer: (params: CustomCellRendererProps<ConfigField>) =>
+          params.data ? (
+            <MockOptSelectorMemo
+              key={params.data.logicalName}
+              dvSvc={dvSvc}
+              vm={viewModel}
+              field={params.data}
+              onUpdate={updateItem}
+            />
+          ) : null,
+      },
+      {
+        headerName: "Perc % Blank",
+        field: "percBlank",
+        headerTooltip: "Percentage of blank values to generate for this field",
+        sortable: true,
+        width: 100,
+        cellEditor: "agNumberCellEditor",
+        cellEditorParams: {
+          min: 0,
+          max: 100,
+        } as INumberCellEditorParams,
+        editable: (params) => params.data?.selectedMock !== undefined,
+      },
+    ]);
+  }, [connection, dvSvc, viewModel.mockTypes]);
 
   React.useEffect(() => {
     const loadConfig = async () => {
-      if (connection && viewModel.selectedTableName) {
-        if (viewModel.config && viewModel.config.table.logical === viewModel.selectedTableName) {
+      setLoadingConfig(true);
+      if (!connection) {
+        setLoadingConfig(false);
+        return;
+      }
+      if (viewModel.selectedTable) {
+        if (viewModel.config && viewModel.config.table.logical === viewModel.selectedTable.logical) {
           // Configuration already loaded for the selected table
+          setLoadingConfig(false);
           return;
         }
-        const selectedTable = viewModel.tables.find((table) => table.logical === viewModel.selectedTableName);
-        if (selectedTable) {
+        //  const selectedTable = viewModel.tables.find((table) => table.logical === viewModel.selectedTable.logical);
+        if (viewModel.selectedTable) {
           try {
-            setLoadingConfig(true);
-            const retrievedConfig: Config = await dvService.loadConfig(selectedTable);
+            const retrievedConfig: Config = await dvSvc.loadConfig(viewModel.selectedTable);
             viewModel.config = retrievedConfig;
           } catch (err) {
             onLog("Failed to load configuration", "error");
@@ -153,35 +176,50 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
             setLoadingConfig(false);
           }
         }
-      }
+      } else setLoadingConfig(false);
     };
-    console.log("useEffect", viewModel.selectedTableName, dvService, connection);
+
     loadConfig();
-  }, [connection, viewModel.selectedTableName, dvService, onLog]);
+  }, [connection, viewModel.selectedTable, dvSvc, onLog]);
+
   async function updateItem(item: ConfigField) {
-    if (!viewModel.config || !viewModel.config.fields) return;
-    try {
-      if (item.detailsRetrieved === false) {
-        // Load additional details if not already retrieved
-        console.log("Loading details for field:", item.logicalName);
-        const detailedField = await dvService.loadFieldDetails(viewModel.config.table, item);
-        item.fieldDetails = detailedField;
-        item.detailsRetrieved = true;
-      }
-      viewModel.config.fields = viewModel.config.fields.map((f: ConfigField) => {
-        if (f.logicalName === item.logicalName) {
-          // mutate the existing object to preserve properties like mockMatch/prototype
-          Object.assign(f, item);
-        }
-        return f;
-      });
-    } catch (err) {
-      onLog("Failed to update field include", "error");
-    }
+    console.log(
+      "updating config",
+      viewModel.config?.fields?.filter((f) => f.logicalName === item.logicalName)
+    );
+    // if (!viewModel.config || !viewModel.config.fields) return;
+    // try {
+    //   if (item.detailsRetrieved === false) {
+    //     // Load additional details if not already retrieved
+
+    //     const detailedField = await dvSvc.loadFieldDetails(viewModel.config.table, item);
+    //     item.fieldDetails = detailedField;
+    //     item.detailsRetrieved = true;
+    //   }
+    //   viewModel.config.fields = viewModel.config.fields.map((f: ConfigField) => {
+    //     if (f.logicalName === item.logicalName) {
+    //       // mutate the existing object to preserve properties like mockMatch/prototype
+    //       Object.assign(f, item);
+    //     }
+    //     return f;
+    //   });
+    // } catch (err) {
+    //   onLog("Failed to update field include", "error");
+    // }
   }
   const onOptionSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
-    viewModel.selectedTableName = data.optionValue as string;
+    viewModel.selectedTable = viewModel.tables.find((table) => table.logical === (data.optionValue as string));
   };
+
+  function saveMockarooKey(value: string) {
+    viewModel.mockarooApiKey = value;
+    window.toolboxAPI.settings.set("mockarooApiKey", value);
+    window.toolboxAPI.utils.showNotification({
+      title: "Mockaroo API Key Saved",
+      body: `Your Mockaroo API key has been saved successfully.`,
+      type: "success",
+    });
+  }
 
   const configGrid = (
     <>
@@ -214,7 +252,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
             listbox={{ className: styles.listbox }}
             positioning={{ autoSize: true }}
             onOptionSelect={onOptionSelect}
-            value={viewModel.tables.find((table) => table.logical === viewModel.selectedTableName)?.label || ""}
+            value={viewModel.selectedTable?.label || ""}
             style={{ width: "200px" }}
             size="small"
           >
@@ -222,20 +260,17 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
           </Combobox>
         </ToolbarGroup>
         <ToolbarGroup>
-          <Field size="small" label="Mockaroo API Key ">
+          <Field size="small" label="Mockaroo Key">
             <Input
               size="small"
-              type="password"
               placeholder="Enter API key"
               value={viewModel.mockarooApiKey}
-              style={{ width: "150px" }}
+              style={{ width: "100px", marginRight: "5px" }}
               onChange={(e) => {
-                viewModel.mockarooApiKey = e.target.value;
+                saveMockarooKey(e.target.value);
               }}
             />
           </Field>
-        </ToolbarGroup>
-        <ToolbarGroup>
           <Field size="small" label="No. of Rows ">
             <Input
               size="small"
@@ -256,7 +291,11 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   return (
     <div>
       {toolbar}
-      {loadingConfig && <div>Loading configuration...</div>}
+      {loadingConfig && (
+        <div>
+          <Spinner label="Loading configuration..." />
+        </div>
+      )}
       {!loadingConfig && viewModel.config && configGrid}
     </div>
   );

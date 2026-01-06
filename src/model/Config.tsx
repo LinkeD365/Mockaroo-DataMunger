@@ -14,11 +14,20 @@ export class Config {
   get jsonString(): string {
     return JSON.stringify(
       this.fields
-        ?.filter((field) => field.include && field.selectedMock)
+        ?.filter((field) => field.include && field.selectedMock && !field.selectedMock.fixed)
         .map((field) => ({
           name: field.logicalName,
-          type: field.selectedMock?.name || "",
-          percBlank: field.percBlank,
+          type: field.selectedMock?.mockName || field.selectedMock?.name || "",
+          percentBlank: field.percBlank,
+          ...(field.selectedMock?.parameters?.reduce((acc, param) => {
+            if (param.value !== undefined) {
+              acc[param.name] = param.value;
+            }
+            return acc;
+          }, {} as Record<string, string>) ?? {}),
+          ...(field.type === "Picklist" && field.selectedValues.length > 0
+            ? { values: field.selectedValues, selectionStyle: "random" }
+            : {}),
         })) ?? []
     );
   }
@@ -35,6 +44,8 @@ export class ConfigField {
   fieldDetails: { name: string; value: string }[] = [];
   selectedMock?: MockType;
   percBlank: number = 0;
+  selectedValues: string[] = [];
+  choiceValues: ChoiceValue[] = [];
   constructor(logicalName: string, metadataId: string, type: string, displayName: string) {
     this.logicalName = logicalName;
     this.metadataId = metadataId;
@@ -58,6 +69,8 @@ export class ConfigField {
         return "datetime";
       case "Boolean":
         return "Boolean";
+      case "Picklist":
+        return "picklist";
       default:
         return "Unknown";
     }
@@ -66,7 +79,10 @@ export class ConfigField {
 
 export class MockType {
   name: string;
+  mockName?: string;
   type: string;
+  useMockaroo: boolean = true;
+  fixed: boolean = false;
   parameters?: MockParameter[];
 
   constructor(name: string, type: string) {
@@ -87,5 +103,14 @@ export class MockParameter {
     this.name = name;
     this.type = type;
     makeAutoObservable(this);
+  }
+}
+
+export class ChoiceValue {
+  label: string;
+  value: string;
+  constructor(label: string, value: string) {
+    this.label = label;
+    this.value = value;
   }
 }
