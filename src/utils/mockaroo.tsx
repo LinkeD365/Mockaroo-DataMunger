@@ -20,6 +20,10 @@ export class mockarooService {
   }
 
   async getMockData(recordCount: number, configJson: string, apiKey: string): Promise<any[]> {
+    if (!apiKey || apiKey.trim().length === 0) {
+      this.onLog("Mockaroo API key is required and cannot be empty.", "error");
+      throw new Error("Mockaroo API key is required and cannot be empty.");
+    }
     console.log(configJson);
     const url = `https://api.mockaroo.com/api/generate.json?key=${encodeURIComponent(apiKey)}&count=${recordCount}`;
 

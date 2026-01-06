@@ -52,7 +52,7 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
     loadPicklistValues();
   }, [field.selectedMock, dvSvc, vm.selectedTable?.logical, field.logicalName]);
 
-  function saveParamters() {
+  function saveParameters() {
     if (field.selectedMock && field.selectedMock.parameters) {
       field.selectedMock.parameters = field.selectedMock.parameters.map((param: any) => ({
         ...param,
@@ -112,7 +112,7 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
                             setParamValues({ ...paramValues, [paramName]: data.checked });
                           }}
                         />
-                      )}{" "}
+                      )}
                       {isNumber && (
                         <Field label={paramLabel} size="small">
                           <Input
@@ -142,7 +142,7 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
             </div>
           </DialogContent>
           <DialogActions>
-            <Button appearance="primary" onClick={saveParamters}>
+            <Button appearance="primary" onClick={saveParameters}>
               Save
             </Button>
             <Button appearance="secondary" onClick={() => setOpenConfig(false)}>

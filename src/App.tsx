@@ -55,9 +55,10 @@ function App() {
   }, [connection, addLog]);
 
   const mockarooSvc = useMemo(() => {
+    if (!dvSvc) return null;
     return new mockarooService({
       connection: connection,
-      dvSvc: dvSvc!,
+      dvSvc: dvSvc,
       onLog: addLog,
     });
   }, [connection, dvSvc, addLog]);
@@ -78,7 +79,7 @@ function App() {
       <MockarooMain
         connection={connection}
         viewModel={viewModel}
-        dvSvc={dvSvc!}
+        dvSvc={dvSvc}
         onLog={addLog}
         isLoading={isLoading}
         mckSvc={mockarooSvc}

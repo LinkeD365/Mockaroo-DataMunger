@@ -14,6 +14,8 @@ export class Config {
   get jsonString(): string {
     return JSON.stringify(
       this.fields
+        // Filter out fields with fixed=true as they don't need Mockaroo generation
+        // (e.g., picklist fields that use pre-defined choice values from Dataverse)
         ?.filter((field) => field.include && field.selectedMock && !field.selectedMock.fixed)
         .map((field) => ({
           name: field.logicalName,

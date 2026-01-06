@@ -67,6 +67,11 @@ export class dvService {
 
       this.onLog(`Attributes loaded for table: ${selectedTable.label}`, "success");
 
+      // Filter out unsupported field types and deprecated fields:
+      // - Virtual: calculated/rollup fields not suitable for data creation
+      // - Customer/Owner: require special handling in Dataverse
+      // - Uniqueidentifier: system-managed GUIDs
+      // - Deprecated: legacy fields marked as deprecated
       const configFields: ConfigField[] = entityMeta.value
         .map((attr: any) => {
           return new ConfigField(
@@ -119,15 +124,18 @@ export class dvService {
       if (!this.connection) {
         this.onLog("No connection available", "error");
         reject(new Error("No connection available"));
+        return;
       }
       if (!table || !data || data.length === 0) {
         this.onLog("No table selected or data passed for data creation", "error");
         reject(new Error("No table selected or data passed for data creation"));
+        return;
       }
 
       if (!fields || fields.length === 0) {
         this.onLog("No fields selected for data creation", "error");
         reject(new Error("No fields selected for data creation"));
+        return;
       }
 
       fields.filter(f => f.selectedMock?.type === "picklist").forEach(fld => {
@@ -136,7 +144,7 @@ export class dvService {
         });
       });
 
-      console.log("Data to be created:", toJS(data));
+      this.onLog(`Data to be created: ${JSON.stringify(toJS(data))}`, "info");
       const batchSize = 100;
       const batches: any[] = [];
       for (let i = 0; i < data.length; i += batchSize) {

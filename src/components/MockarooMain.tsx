@@ -27,8 +27,8 @@ import { DataTab } from "./DataTab";
 
 interface MockarooMainProps {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dvSvc: dvService;
-  mckSvc: mockarooService;
+  dvSvc: dvService | null;
+  mckSvc: mockarooService | null;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -57,6 +57,8 @@ const useStyles = makeStyles({
   },
 });
 
+const MIN_API_KEY_LENGTH = 8;
+
 export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Element => {
   const { connection, dvSvc, mckSvc, isLoading, viewModel, onLog } = props;
 
@@ -70,7 +72,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   const styles = useStyles();
 
   React.useEffect(() => {
-    if (connection && !tablesLoaded && viewModel.tables.length === 0) {
+    if (connection && dvSvc && !tablesLoaded && viewModel.tables.length === 0) {
       dvSvc
         .loadTables()
         .then((tables) => {
@@ -113,16 +115,19 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   const onMainTabSelect = (_event: SelectTabEvent, data: SelectTabData) => {
     setSelectedTab(data.value);
   };
-  const MIN_API_KEY_LENGTH = 8;
   function getData(): void {
+    if (!mckSvc) {
+      onLog("Mockaroo service is not available. Please check your connection.", "error");
+      return;
+    }
     const trimmedApiKey = viewModel.mockarooApiKey.trim();
     if (!trimmedApiKey) {
       onLog("Mockaroo API key is not configured. Please enter your API key.", "error");
-      throw new Error("Mockaroo API key is not configured.");
+      return;
     }
     if (trimmedApiKey.length < MIN_API_KEY_LENGTH) {
       onLog("Mockaroo API key appears to be invalid. Please check your API key.", "error");
-      throw new Error("Mockaroo API key appears to be invalid.");
+      return;
     }
     mckSvc
       .getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "", viewModel.mockarooApiKey)
@@ -151,6 +156,10 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   }
 
   async function createData(): Promise<void> {
+    if (!dvSvc) {
+      onLog("Dataverse service is not available. Please check your connection.", "error");
+      return;
+    }
     setCreatingData(true);
     await dvSvc
       .createData(viewModel.selectedTable!, viewModel.config?.fields || [], viewModel.data || [])

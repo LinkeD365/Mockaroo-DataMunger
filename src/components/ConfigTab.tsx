@@ -2,6 +2,7 @@ import React from "react";
 import { ViewModel } from "../model/viewModel";
 import { dvService } from "../utils/dataverse";
 import { observer } from "mobx-react";
+import { toJS } from "mobx";
 import { Config, ConfigField } from "../model/Config";
 import {
   Combobox,
@@ -48,7 +49,7 @@ const useStyles = makeStyles({
 
 interface ConfigTabProps {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dvSvc: dvService;
+  dvSvc: dvService | null;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -69,6 +70,8 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   React.useEffect(() => {
     console.log("Setting up column definitions for config grid");
     if (!connection) return;
+    // Use toJS to ensure MobX observable changes trigger this effect
+    const mockTypes = toJS(viewModel.mockTypes);
     setColDefs([
       {
         headerName: "Column Name",
@@ -149,12 +152,12 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
         editable: (params) => params.data?.selectedMock !== undefined,
       },
     ]);
-  }, [connection, dvSvc, viewModel.mockTypes]);
+  }, [connection, dvSvc, toJS(viewModel.mockTypes)]);
 
   React.useEffect(() => {
     const loadConfig = async () => {
       setLoadingConfig(true);
-      if (!connection) {
+      if (!connection || !dvSvc) {
         setLoadingConfig(false);
         return;
       }
@@ -267,6 +270,9 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               value={viewModel.mockarooApiKey}
               style={{ width: "100px", marginRight: "5px" }}
               onChange={(e) => {
+                viewModel.mockarooApiKey = e.target.value;
+              }}
+              onBlur={(e) => {
                 saveMockarooKey(e.target.value);
               }}
             />
