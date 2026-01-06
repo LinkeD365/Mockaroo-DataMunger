@@ -272,8 +272,8 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               onChange={(e) => {
                 viewModel.mockarooApiKey = e.target.value;
               }}
-              onBlur={(e) => {
-                saveMockarooKey(e.target.value);
+              onBlur={() => {
+                saveMockarooKey(viewModel.mockarooApiKey);
               }}
             />
           </Field>
