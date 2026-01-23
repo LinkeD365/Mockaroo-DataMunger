@@ -45,7 +45,7 @@ export class ConfigField {
   selectedMock?: MockType;
   percBlank: number = 0;
   selectedValues: string[] = [];
-  choiceValues: ChoiceValue[] = [];
+  choiceValues: SelectionValue[] = [];
   constructor(logicalName: string, metadataId: string, type: string, displayName: string) {
     this.logicalName = logicalName;
     this.metadataId = metadataId;
@@ -64,6 +64,7 @@ export class ConfigField {
       case "Integer":
       case "Double":
       case "Decimal":
+      case "Money":
         return "integer";
       case "DateTime":
         return "datetime";
@@ -71,6 +72,8 @@ export class ConfigField {
         return "Boolean";
       case "Picklist":
         return "picklist";
+      case "Lookup":
+        return "lookup";
       default:
         return "Unknown";
     }
@@ -106,7 +109,7 @@ export class MockParameter {
   }
 }
 
-export class ChoiceValue {
+export class SelectionValue {
   label: string;
   value: string;
   constructor(label: string, value: string) {

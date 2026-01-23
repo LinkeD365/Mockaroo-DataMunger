@@ -1520,6 +1520,12 @@
       "name": "Random Picklist",
       "mockName": "Custom List",
       "type": "picklist"
+    },
+    { "name": "Fixed Lookup", "type": "lookup", "fixed": true, "useMockaroo": false },
+    {
+      "name": "Random Lookup",
+      "mockName": "Dataset Column",
+      "type": "lookup"
     }
   ]
 }

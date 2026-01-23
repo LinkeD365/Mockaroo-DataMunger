@@ -1,5 +1,5 @@
 import { toJS } from "mobx";
-import { ChoiceValue, Config, ConfigField } from "../model/Config";
+import { SelectionValue, Config, ConfigField } from "../model/Config";
 import { Table } from "../model/viewModel";
 
 interface dvServiceProps {
@@ -130,11 +130,13 @@ export class dvService {
         reject(new Error("No fields selected for data creation"));
       }
 
-      fields.filter(f => f.selectedMock?.type === "picklist").forEach(fld => {
-        data.forEach(record => {
-          record[fld.logicalName] = fld.choiceValues.find(cv => cv.label === record[fld.logicalName])?.value;
+      fields
+        .filter((f) => f.selectedMock?.type === "picklist")
+        .forEach((fld) => {
+          data.forEach((record) => {
+            record[fld.logicalName] = fld.choiceValues.find((cv) => cv.label === record[fld.logicalName])?.value;
+          });
         });
-      });
 
       console.log("Data to be created:", toJS(data));
       const batchSize = 100;
@@ -157,7 +159,7 @@ export class dvService {
     });
   }
 
-  async getChoiceValues(tableLogicalName: string, fieldLogicalName: string): Promise<ChoiceValue[]> {
+  async getChoiceValues(tableLogicalName: string, fieldLogicalName: string): Promise<SelectionValue[]> {
     if (!this.connection) {
       this.onLog("No connection available", "error");
       throw new Error("No connection available");
@@ -169,12 +171,32 @@ export class dvService {
       const picklistMeta: any = await this.dvApi.queryData(url);
 
       const options = picklistMeta.OptionSet?.Options || [];
-      const values: ChoiceValue[] = options.map((opt: any) => new ChoiceValue(opt.Label?.UserLocalizedLabel?.Label || "", opt.Value.toString()));
+      const values: SelectionValue[] = options.map(
+        (opt: any) => new SelectionValue(opt.Label?.UserLocalizedLabel?.Label || "", opt.Value.toString())
+      );
       this.onLog(`Picklist values loaded for field: ${fieldLogicalName}`, "success");
       return values;
     } catch (error) {
       this.onLog(`Error loading picklist values: ${error}`, "error");
       console.error("Error loading picklist values:", error);
+      throw error;
+    }
+  }
+
+  async getLookupValues(tableLogicalName: string, fieldLogicalName: string): Promise<SelectionValue[]> {
+    if (!this.connection) {
+      this.onLog("No connection available", "error");
+      throw new Error("No connection available");
+    }
+    try {
+      this.onLog(`Loading lookup values for field: ${fieldLogicalName}`, "info");
+      const lookupMeta =
+        // Implementation to retrieve lookup values goes here
+        this.onLog(`Lookup values loaded for field: ${fieldLogicalName}`, "success");
+      return [];
+    } catch (error) {
+      this.onLog(`Error loading lookup values: ${error}`, "error");
+      console.error("Error loading lookup values:", error);
       throw error;
     }
   }

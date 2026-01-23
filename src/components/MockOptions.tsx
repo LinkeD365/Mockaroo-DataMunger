@@ -34,7 +34,7 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
   const { dvSvc, field, vm, onUpdate } = props;
   const [openConfig, setOpenConfig] = React.useState(false);
   const [paramValues, setParamValues] = React.useState<Record<string, any>>({});
-  const [picklistValues, setPicklistValues] = React.useState<string[]>([]);
+  const [selectValues, setSelectValues] = React.useState<string[]>([]);
   const [selectedItems, setSelectedItems] = React.useState<SelectionItemId[]>([]);
 
   React.useEffect(() => {
@@ -42,7 +42,16 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
       if (field.selectedMock?.type === "picklist") {
         const values = await dvSvc.getChoiceValues(vm.selectedTable?.logical || "", field.logicalName);
         field.choiceValues = values;
-        setPicklistValues(values.map((cv) => cv.label));
+        setSelectValues(values.map((cv) => cv.label));
+        // Initialize selected items from field.selectedValues if available
+        if (field.selectedValues && field.selectedValues.length > 0) {
+          setSelectedItems(field.selectedValues);
+        }
+      } else if (field.selectedMock?.type === "lookup") {
+        // For lookup, we can load target entity names as picklist values
+        const values = await dvSvc.getLookupValues(vm.selectedTable?.logical || "", field.logicalName);
+        field.choiceValues = values;
+        setSelectValues(values.map((cv) => cv.label));
         // Initialize selected items from field.selectedValues if available
         if (field.selectedValues && field.selectedValues.length > 0) {
           setSelectedItems(field.selectedValues);
@@ -76,7 +85,7 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
       selectedItems={selectedItems}
       onSelectionChange={(_e, data) => setSelectedItems(data.selectedItems)}
     >
-      {picklistValues.map((value, index) => (
+      {selectValues.map((value, index) => (
         <ListItem key={index} value={value}>
           {value}
         </ListItem>
@@ -170,4 +179,3 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
     </div>
   );
 });
-

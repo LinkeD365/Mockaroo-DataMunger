@@ -55,21 +55,6 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
         autoHeight: true,
       })) || []
   );
-  // React.useEffect(() => {
-  //   const cols = viewModel.config?.fields?.filter((field) => field.include && field.selectedMock) || [];
-  //   const rows: DataRow[] = [];
-
-  //   // Build rows only when we have a matching config field; skip columns without config to satisfy DataRow parameter type.
-  //   viewModel.data?.forEach((dataItem) => {
-  //     cols.forEach((col) => {
-  //       rows.push(new DataRow(col, dataItem[col.logicalName]));
-  //     });
-  //   });
-  //   viewModel.dataRows = rows;
-  // }, [viewModel.data, viewModel.config?.fields]);
-
-  // Using 'any' type for data items because they are dynamically generated from Mockaroo API
-  // with different schemas based on user-selected fields
 
   return (
     <div style={{ width: "98vw", height: "85vh" }}>
