@@ -42,10 +42,13 @@ function App() {
 
   useToolboxEvents(handleEvent);
 
-  // Add initial log (run only once on mount)
   const [theme, setTheme] = useState<string>("light");
-  addLog("Mockaroo Data Munger mounted");
   const [viewModel] = useState(() => new ViewModel());
+
+  // Add initial log (run only once on mount)
+  useEffect(() => {
+    addLog("Mockaroo Data Munger mounted");
+  }, []);
   const dvSvc = useMemo(() => {
     if (!connection) return null;
     return new dvService({
