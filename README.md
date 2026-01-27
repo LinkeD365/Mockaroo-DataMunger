@@ -4,9 +4,13 @@ A tool to mock data from Mockaroo into your Dataverse tables
 
 ## Features
 
-- ✅ React 18 with TypeScript
-- ✅ Vite for fast development and building
-- ✅ Access to ToolBox API via `window.toolboxAPI`
+- ✅ Select a table and map mock options to each column
+- ✅ Use your own key to get data from Mockaroo
+- ✅ Create rows as you need
+
+## Note you need a Mockaroo License
+Please get a free one here https://www.mockaroo.com/ 
+It is limited but will be more than enough for most cases. Subscription keys also capable.
 
 ## License
 

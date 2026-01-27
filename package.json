@@ -1,6 +1,6 @@
 {
   "name": "@linked365/pptb-mockaroo-data-munger",
-  "version": "0.1.0",
+  "version": "0.2.2",
   "displayName": "Mockaroo Data Munger",
   "description": "A tool to mock data from Mockaroo into your Dataverse tables",
   "main": "index.html",
@@ -25,6 +25,10 @@
     "website": "https://linked365.blog",
     "readmeUrl": "https://raw.githubusercontent.com/LinkeD365/Mockaroo-DataMunger/refs/heads/master/README.md",
     "iconUrl": "https://raw.githubusercontent.com/LinkeD365/Mockaroo-DataMunger/refs/heads/master/assets/smallIcon.png"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/LinkeD365/Mockaroo-DataMunger"
   },
   "scripts": {
     "build": "tsc && vite build",
