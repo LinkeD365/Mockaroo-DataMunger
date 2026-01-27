@@ -5,12 +5,12 @@ import { ViewModel } from "../model/viewModel";
 import { dvService } from "../utils/dataverse";
 import { Field, Label, SearchBox, tokens } from "@fluentui/react-components";
 import { ConfigColumn, SelectionValue } from "../model/Config";
-import { utlLib } from "../utils/utils";
+import { UtilLib } from "../utils/utils";
 
 type SearchBoxProps = {
   dvSvc: dvService;
   vm: ViewModel;
-  utils: utlLib;
+  utils: UtilLib;
   selected?: string;
   column: ConfigColumn;
   updateSelected: (owner: SelectionValue) => void;
@@ -33,6 +33,7 @@ function useDebounce(cb: string, delay: number) {
 
 export const SearchBoxCtl = observer((props: SearchBoxProps): React.JSX.Element => {
   const { dvSvc, vm, utils, column, onLog } = props;
+  void vm; // keep vm prop for potential future use and avoid unused-variable warnings
 
   const [query, setQuery] = React.useState("");
   const [loadingText, setLoadingText] = React.useState("Loading...");

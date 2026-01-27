@@ -24,13 +24,13 @@ import { DatabaseArrowUpFilled, DatabaseCheckmarkFilled } from "@fluentui/react-
 import { ConfigTab } from "./ConfigTab";
 import { mockarooService } from "../utils/mockaroo";
 import { DataTab } from "./DataTab";
-import { utlLib } from "../utils/utils";
+import { UtilLib } from "../utils/utils";
 
 interface MockarooMainProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   mckSvc: mockarooService;
-  utils: utlLib;
+  utils: UtilLib;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -189,6 +189,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
               }),
               {},
             ),
+          // Apply fixed values for fields that are not picklist/lookup (those are handled above)
           ...viewModel.config?.fields
             ?.filter(
               (f) => f.selectedMock?.fixed && f.selectedMock?.type !== "picklist" && f.selectedMock?.type !== "lookup",

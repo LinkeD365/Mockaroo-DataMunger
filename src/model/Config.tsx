@@ -14,6 +14,9 @@ export class Config {
   get jsonString(): string {
     return JSON.stringify(
       this.fields
+        // Only include fields that are configured for Mockaroo-based generation and not fixed values.
+        // Fixed mocks (selectedMock.fixed === true) represent constant values that are applied outside
+        // of Mockaroo, so they are intentionally excluded from this JSON payload.
         ?.filter((field) => field.include && field.selectedMock && !field.selectedMock.fixed)
         .map((field) => ({
           name: field.logicalName,
