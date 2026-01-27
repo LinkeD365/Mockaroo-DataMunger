@@ -64,6 +64,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   const { connection, dvSvc, utils, viewModel, onLog } = props;
   const styles = useStyles();
   const [loadingConfig, setLoadingConfig] = React.useState<boolean>(false);
+  const [mockarooKeyInput, setMockarooKeyInput] = React.useState<string>(viewModel.mockarooApiKey);
 
   const [colDefs, setColDefs] = React.useState<ColDef<ConfigColumn>[]>([]);
 
@@ -187,6 +188,10 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
     loadConfig();
   }, [connection, viewModel.selectedTable, dvSvc, onLog]);
 
+  React.useEffect(() => {
+    setMockarooKeyInput(viewModel.mockarooApiKey);
+  }, [viewModel.mockarooApiKey]);
+
   async function updateItem(item: ConfigColumn) {
     console.log(
       "updating config",
@@ -250,11 +255,10 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
             <Input
               size="small"
               placeholder="Enter API key"
-              value={viewModel.mockarooApiKey}
+              value={mockarooKeyInput}
               style={{ width: "100px", marginRight: "5px" }}
-              onChange={(e) => {
-                saveMockarooKey(e.target.value);
-              }}
+              onChange={(e) => setMockarooKeyInput(e.target.value)}
+              onBlur={() => saveMockarooKey(mockarooKeyInput.trim())}
             />
           </Field>
           <Field size="small" label="No. of Rows ">

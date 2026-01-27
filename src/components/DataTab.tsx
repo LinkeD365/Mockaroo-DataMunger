@@ -40,22 +40,22 @@ const myTheme = themeQuartz.withParams({
 export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
   const { viewModel } = props;
 
-  console.log(viewModel.config);
-
-  const [agCols] = React.useState<ColDef<DataRow>[]>(
-    viewModel.config?.fields
-      ?.filter((field) => field.include && field.selectedMock)
-      ?.map((configCol) => ({
-        headerName: configCol.displayName || configCol.logicalName,
-        field: configCol.logicalName as any,
-        sortable: true,
-        filter: true,
-        resizable: true,
-        width: 200,
-        flex: 1,
-        wrapText: true,
-        autoHeight: true,
-      })) || [],
+  const agCols = React.useMemo<ColDef<DataRow>[]>(
+    () =>
+      viewModel.config?.fields
+        ?.filter((field) => field.include && field.selectedMock)
+        .map((configCol) => ({
+          headerName: configCol.displayName || configCol.logicalName,
+          field: configCol.logicalName as any,
+          sortable: true,
+          filter: true,
+          resizable: true,
+          width: 200,
+          flex: 1,
+          wrapText: true,
+          autoHeight: true,
+        })) || [],
+    [viewModel.config?.fields],
   );
 
   return (

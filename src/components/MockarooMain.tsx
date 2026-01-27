@@ -120,13 +120,41 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
     const trimmedApiKey = viewModel.mockarooApiKey.trim();
     if (!trimmedApiKey) {
       onLog("Mockaroo API key is not configured. Please enter your API key.", "error");
-      throw new Error("Mockaroo API key is not configured.");
+      window.toolboxAPI.utils.showNotification({
+        title: "Mockaroo API Key Missing",
+        body: "Please enter your Mockaroo API key before generating data.",
+        type: "error",
+      });
+      return;
     }
     if (trimmedApiKey.length < MIN_API_KEY_LENGTH) {
       onLog("Mockaroo API key appears to be invalid. Please check your API key.", "error");
-      throw new Error("Mockaroo API key appears to be invalid.");
+      window.toolboxAPI.utils.showNotification({
+        title: "Mockaroo API Key Invalid",
+        body: "The API key looks too short. Please double-check and try again.",
+        type: "error",
+      });
+      return;
     }
-    console.log("Generating data with config:", viewModel.config);
+
+    const fieldsNeedingSelection = viewModel.config?.fields?.filter(
+      (f) =>
+        f.include &&
+        f.selectedMock?.fixed &&
+        (f.selectedMock.type === "picklist" || f.selectedMock.type === "lookup") &&
+        f.selectedValues.length === 0,
+    );
+    if (fieldsNeedingSelection && fieldsNeedingSelection.length > 0) {
+      const firstMissing = fieldsNeedingSelection[0];
+      window.toolboxAPI.utils.showNotification({
+        title: "Selection Required",
+        body: `Choose a value for ${firstMissing.displayName} before generating data.`,
+        type: "warning",
+      });
+      onLog("Generate blocked: fixed picklist/lookup requires a selected value", "warning");
+      return;
+    }
+
     mckSvc
       .getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "", viewModel.mockarooApiKey)
       .then((data) => {
@@ -163,10 +191,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
             ),
           ...viewModel.config?.fields
             ?.filter(
-              (f) =>
-                f.selectedMock?.fixed &&
-                (f.selectedMock?.type !== "picklist" &&
-                f.selectedMock?.type !== "lookup")
+              (f) => f.selectedMock?.fixed && f.selectedMock?.type !== "picklist" && f.selectedMock?.type !== "lookup",
             )
             .reduce(
               (acc, field) => ({
@@ -184,6 +209,15 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
         });
         setSelectedTab("data");
         onLog(`Generated ${viewModel.data.length} mock data records`, "success");
+      })
+      .catch((err) => {
+        window.toolboxAPI.utils.showNotification({
+          title: "Mockaroo Error",
+          body: `Could not generate data: ${err}`,
+          type: "error",
+          duration: 8000,
+        });
+        onLog(`Failed to generate mock data: ${err}`, "error");
       });
   }
 

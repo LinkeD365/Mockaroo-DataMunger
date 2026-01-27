@@ -130,15 +130,18 @@ export class dvService {
       if (!this.connection) {
         this.onLog("No connection available", "error");
         reject(new Error("No connection available"));
+        return;
       }
       if (!table || !data || data.length === 0) {
         this.onLog("No table selected or data passed for data creation", "error");
         reject(new Error("No table selected or data passed for data creation"));
+        return;
       }
 
       if (!fields || fields.length === 0) {
         this.onLog("No fields selected for data creation", "error");
         reject(new Error("No fields selected for data creation"));
+        return;
       }
 
       fields

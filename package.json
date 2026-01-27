@@ -1,5 +1,5 @@
 {
-  "name": "pptb-mockaroo-data-munger",
+  "name": "@linked365/pptb-mockaroo-data-munger",
   "version": "0.1.0",
   "displayName": "Mockaroo Data Munger",
   "description": "A tool to mock data from Mockaroo into your Dataverse tables",
