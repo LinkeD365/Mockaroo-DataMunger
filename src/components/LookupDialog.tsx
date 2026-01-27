@@ -20,14 +20,14 @@ import {
   TagGroupProps,
 } from "@fluentui/react-components";
 import { SearchBoxCtl } from "./SeachBox";
-import { utlLib } from "../utils/utils";
+import { UtilLib } from "../utils/utils";
 
 interface LookupDialogProps {
   dvSvc: dvService;
   vm: ViewModel;
   dialogOpen: boolean;
   column: ConfigColumn;
-  utils: utlLib;
+  utils: UtilLib;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
   onDialogClose: () => void;
 }
@@ -45,7 +45,6 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
               const parentTable = vm.tables.find((t) => t.logical === tableInfo);
               if (parentTable) {
                 column.parentTable = parentTable;
-                console.log("Parent table set in LookupDialog:", parentTable);
               } else {
                 utils.alert("No Parent table found", `Parent table ${tableInfo} not found in loaded tables.`);
               }

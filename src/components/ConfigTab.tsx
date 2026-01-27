@@ -28,7 +28,7 @@ import {
 import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
 import { MockTypeSelector } from "./MockSelector";
 import { MockOptionsSelector } from "./MockOptions";
-import { utlLib } from "../utils/utils";
+import { UtilLib } from "../utils/utils";
 
 ModuleRegistry.registerModules([TextFilterModule, ClientSideRowModelModule, CheckboxEditorModule, NumberEditorModule]);
 
@@ -49,7 +49,7 @@ const useStyles = makeStyles({
 interface ConfigTabProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
-  utils: utlLib;
+  utils: UtilLib;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -69,7 +69,6 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   const [colDefs, setColDefs] = React.useState<ColDef<ConfigColumn>[]>([]);
 
   React.useEffect(() => {
-    console.log("Setting up column definitions for config grid");
     if (!connection) return;
     setColDefs([
       {
@@ -192,12 +191,10 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
     setMockarooKeyInput(viewModel.mockarooApiKey);
   }, [viewModel.mockarooApiKey]);
 
-  async function updateItem(item: ConfigColumn) {
-    console.log(
-      "updating config",
-      viewModel.config?.fields?.filter((f) => f.logicalName === item.logicalName),
-    );
+  function updateItem(_item: ConfigColumn) {
+    // No-op: Grid updates are handled reactively via MobX
   }
+
   const onOptionSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
     viewModel.selectedTable = viewModel.tables.find((table) => table.logical === (data.optionValue as string));
   };

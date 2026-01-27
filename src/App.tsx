@@ -6,7 +6,7 @@ import { ViewModel } from "./model/viewModel";
 
 import { dvService } from "./utils/dataverse";
 import { mockarooService } from "./utils/mockaroo";
-import { utlLib } from "./utils/utils";
+import { UtilLib } from "./utils/utils";
 
 function App() {
   const { connection, isLoading, refreshConnection } = useConnection();
@@ -56,15 +56,16 @@ function App() {
   }, [connection, addLog]);
 
   const mockarooSvc = useMemo(() => {
+    if (!dvSvc) return null;
     return new mockarooService({
       connection: connection,
-      dvSvc: dvSvc!,
+      dvSvc: dvSvc,
       onLog: addLog,
     });
   }, [connection, dvSvc, addLog]);
 
   const utils = useMemo(() => {
-    return new utlLib({
+    return new UtilLib({
       onLog: addLog,
     });
   }, [connection, dvSvc, addLog]);
@@ -82,15 +83,19 @@ function App() {
   }, []);
   return (
     <FluentProvider theme={theme === "dark" ? webDarkTheme : webLightTheme}>
-      <MockarooMain
-        connection={connection}
-        viewModel={viewModel}
-        dvSvc={dvSvc!}
-        onLog={addLog}
-        isLoading={isLoading}
-        mckSvc={mockarooSvc}
-        utils={utils}
-      />
+      {dvSvc && mockarooSvc ? (
+        <MockarooMain
+          connection={connection}
+          viewModel={viewModel}
+          dvSvc={dvSvc}
+          onLog={addLog}
+          isLoading={isLoading}
+          mckSvc={mockarooSvc}
+          utils={utils}
+        />
+      ) : (
+        <div>Loading...</div>
+      )}
     </FluentProvider>
   );
 }

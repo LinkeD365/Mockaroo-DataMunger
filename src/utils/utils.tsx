@@ -2,7 +2,7 @@ interface utilsProps {
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
-export class utlLib {
+export class UtilLib {
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 
   constructor(props: utilsProps) {

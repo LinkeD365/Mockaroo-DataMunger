@@ -20,7 +20,8 @@ export class mockarooService {
   }
 
   async getMockData(recordCount: number, configJson: string, apiKey: string): Promise<any[]> {
-    console.log(configJson);
+    this.onLog(`Mockaroo config: ${configJson}`, "info");
+    // Security: The Mockaroo API key is sent over the network. Ensure that a read-only or limited-scope key is used and kept secret.
     const url = `https://api.mockaroo.com/api/generate.json?key=${encodeURIComponent(apiKey)}&count=${recordCount}`;
 
     const request = new Request(url, {

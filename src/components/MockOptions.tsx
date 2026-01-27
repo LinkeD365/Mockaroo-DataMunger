@@ -6,7 +6,7 @@ import { SettingsFilled } from "@fluentui/react-icons";
 import { dvService } from "../utils/dataverse";
 import { ViewModel } from "../model/viewModel";
 import { ConfigDialog } from "./ConfigDialog";
-import { utlLib } from "../utils/utils";
+import { UtilLib } from "../utils/utils";
 
 // Only Once in your app you can set whether to enable hooks tracking or not.
 // In CRA(create-react-app) e.g. this can be done in src/index.js
@@ -15,7 +15,7 @@ interface MockOptionsSelectorProps {
   dvSvc: dvService;
   column: ConfigColumn;
   vm: ViewModel;
-  utils: utlLib;
+  utils: UtilLib;
   onUpdate: (column: ConfigColumn) => void;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
@@ -43,8 +43,8 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
           !column.selectedMock ||
           (column.selectedMock.type !== "picklist" &&
             column.selectedMock.type !== "lookup" &&
-            (!column.selectedMock.parameters || column.selectedMock.parameters.length === 0)
-          && (column.selectedMock.type === "boolean" && !column.selectedMock.fixed) )
+            (!column.selectedMock.parameters || column.selectedMock.parameters.length === 0) &&
+            !(column.selectedMock.type === "boolean" && column.selectedMock.fixed))
         }
         size="small"
         style={{ marginLeft: "8px" }}

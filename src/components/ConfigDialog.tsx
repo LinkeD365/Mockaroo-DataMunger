@@ -20,12 +20,12 @@ import {
 } from "@fluentui/react-components";
 import { ConfigColumn, SelectionValue } from "../model/Config";
 import { LookupDialog } from "./LookupDialog";
-import { utlLib } from "../utils/utils";
+import { UtilLib } from "../utils/utils";
 
 interface ConfigDialogProps {
   dvSvc: dvService;
   vm: ViewModel;
-  utils: utlLib;
+  utils: UtilLib;
   openConfig: boolean;
   column: ConfigColumn;
   closeConfig: () => void;
@@ -71,10 +71,14 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
 
   function saveParameters() {
     if (column.selectedMock && column.selectedMock.parameters) {
-      column.selectedMock.parameters = column.selectedMock.parameters.map((param: any) => ({
+      const updatedParameters = column.selectedMock.parameters.map((param: any) => ({
         ...param,
         value: paramValues[param.name] ?? param.default,
       }));
+      column.selectedMock = {
+        ...column.selectedMock,
+        parameters: updatedParameters,
+      };
     }
     // Save selected picklist values
     if (column.selectedMock?.type === "picklist") {
