@@ -38,7 +38,6 @@ function App() {
       }
     },
     [refreshConnection],
-    [refreshConnection],
   );
 
   useToolboxEvents(handleEvent);
