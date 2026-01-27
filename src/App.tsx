@@ -48,7 +48,7 @@ function App() {
   // Add initial log (run only once on mount)
   useEffect(() => {
     addLog("Mockaroo Data Munger mounted");
-  }, [addLog]);
+  }, []);
   const dvSvc = useMemo(() => {
     if (!connection) return null;
     return new dvService({
