@@ -41,6 +41,7 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
         icon={<SettingsFilled />}
         disabled={
           !column.selectedMock ||
+          // Disable if: not picklist/lookup AND (no parameters OR (boolean without fixed value))
           (column.selectedMock.type !== "picklist" &&
             column.selectedMock.type !== "lookup" &&
             (!column.selectedMock.parameters || column.selectedMock.parameters.length === 0) &&

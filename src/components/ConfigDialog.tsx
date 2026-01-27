@@ -71,6 +71,8 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
 
   function saveParameters() {
     if (column.selectedMock && column.selectedMock.parameters) {
+      // Create a new parameters array to avoid mutation of shared MockType objects
+      // Shallow copy is sufficient as parameter values are primitives
       const updatedParameters = column.selectedMock.parameters.map((param: any) => ({
         ...param,
         value: paramValues[param.name] ?? param.default,
