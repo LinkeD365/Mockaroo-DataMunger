@@ -37,14 +37,14 @@ function App() {
           break;
       }
     },
-    [refreshConnection]
+    [refreshConnection],
   );
 
   useToolboxEvents(handleEvent);
 
   // Add initial log (run only once on mount)
   const [theme, setTheme] = useState<string>("light");
-
+  addLog("Mockaroo Data Munger mounted");
   const [viewModel] = useState(() => new ViewModel());
   const dvSvc = useMemo(() => {
     if (!connection) return null;
