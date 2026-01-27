@@ -369,7 +369,7 @@
           "name": "max",
           "type": "string|memo",
           "description": "The maximum date in mm/dd/yyyy format.",
-          "default": "12/9/2024"
+          "default": "12/9/2027"
         },
         {
           "name": "format",
@@ -1524,8 +1524,9 @@
     { "name": "Fixed Lookup", "type": "lookup", "fixed": true, "useMockaroo": false },
     {
       "name": "Random Lookup",
-      "mockName": "Dataset Column",
+      "mockName": "Custom List",
       "type": "lookup"
-    }
+    },
+    { "name": "Fixed Boolean", "fixed": true, "type": "boolean" }
   ]
 }

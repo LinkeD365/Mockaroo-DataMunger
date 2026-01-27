@@ -2,7 +2,7 @@ import React from "react";
 import { ViewModel } from "../model/viewModel";
 import { dvService } from "../utils/dataverse";
 import { observer } from "mobx-react";
-import { Config, ConfigField } from "../model/Config";
+import { Config, ConfigColumn } from "../model/Config";
 import {
   Combobox,
   ComboboxProps,
@@ -28,18 +28,18 @@ import {
 import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
 import { MockTypeSelector } from "./MockSelector";
 import { MockOptionsSelector } from "./MockOptions";
+import { utlLib } from "../utils/utils";
 
 ModuleRegistry.registerModules([TextFilterModule, ClientSideRowModelModule, CheckboxEditorModule, NumberEditorModule]);
 
 const useStyles = makeStyles({
   listbox: {
-    height: "200px",
-    // maxHeight will be applied only positioning autoSize set.
-    maxHeight: "20px",
+    maxHeight: "300px",
+    overflowY: "auto",
     overflowX: "hidden",
   },
   option: {
-    height: "50px",
+    height: "32px",
   },
   toolbar: {
     justifyContent: "space-between",
@@ -49,6 +49,7 @@ const useStyles = makeStyles({
 interface ConfigTabProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
+  utils: utlLib;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -60,11 +61,11 @@ const myTheme = themeQuartz.withParams({
 const MockOptSelectorMemo = React.memo(MockOptionsSelector);
 
 export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => {
-  const { connection, dvSvc, viewModel, onLog } = props;
+  const { connection, dvSvc, utils, viewModel, onLog } = props;
   const styles = useStyles();
   const [loadingConfig, setLoadingConfig] = React.useState<boolean>(false);
 
-  const [colDefs, setColDefs] = React.useState<ColDef<ConfigField>[]>([]);
+  const [colDefs, setColDefs] = React.useState<ColDef<ConfigColumn>[]>([]);
 
   React.useEffect(() => {
     console.log("Setting up column definitions for config grid");
@@ -114,9 +115,9 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
         minWidth: 200,
         resizable: true,
         flex: 1,
-        cellRenderer: (params: CustomCellRendererProps<ConfigField>) =>
+        cellRenderer: (params: CustomCellRendererProps<ConfigColumn>) =>
           params.data ? (
-            <MockTypeSelector field={params.data} mockTypes={viewModel.mockTypes} onUpdate={updateItem} />
+            <MockTypeSelector column={params.data} mockTypes={viewModel.mockTypes} onUpdate={updateItem} />
           ) : null,
       },
       {
@@ -124,14 +125,18 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
         headerTooltip: "Additional configuration for the selected mock type",
         field: "selectedMock.parameters",
         sortable: false,
-        cellRenderer: (params: CustomCellRendererProps<ConfigField>) =>
+        filter: true,
+        resizable: true,
+        cellRenderer: (params: CustomCellRendererProps<ConfigColumn>) =>
           params.data ? (
             <MockOptSelectorMemo
               key={params.data.logicalName}
               dvSvc={dvSvc}
               vm={viewModel}
-              field={params.data}
+              utils={utils}
+              column={params.data}
               onUpdate={updateItem}
+              onLog={onLog}
             />
           ) : null,
       },
@@ -182,30 +187,11 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
     loadConfig();
   }, [connection, viewModel.selectedTable, dvSvc, onLog]);
 
-  async function updateItem(item: ConfigField) {
+  async function updateItem(item: ConfigColumn) {
     console.log(
       "updating config",
-      viewModel.config?.fields?.filter((f) => f.logicalName === item.logicalName)
+      viewModel.config?.fields?.filter((f) => f.logicalName === item.logicalName),
     );
-    // if (!viewModel.config || !viewModel.config.fields) return;
-    // try {
-    //   if (item.detailsRetrieved === false) {
-    //     // Load additional details if not already retrieved
-
-    //     const detailedField = await dvSvc.loadFieldDetails(viewModel.config.table, item);
-    //     item.fieldDetails = detailedField;
-    //     item.detailsRetrieved = true;
-    //   }
-    //   viewModel.config.fields = viewModel.config.fields.map((f: ConfigField) => {
-    //     if (f.logicalName === item.logicalName) {
-    //       // mutate the existing object to preserve properties like mockMatch/prototype
-    //       Object.assign(f, item);
-    //     }
-    //     return f;
-    //   });
-    // } catch (err) {
-    //   onLog("Failed to update field include", "error");
-    // }
   }
   const onOptionSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
     viewModel.selectedTable = viewModel.tables.find((table) => table.logical === (data.optionValue as string));
@@ -223,8 +209,8 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
 
   const configGrid = (
     <>
-      <div style={{ width: "98vw", height: "85vh" }}>
-        <AgGridReact<ConfigField>
+      <div style={{ width: "98vw", height: "85vh", position: "relative" }}>
+        <AgGridReact<ConfigColumn>
           theme={myTheme}
           rowData={viewModel.config?.fields || []}
           columnDefs={colDefs}
@@ -243,14 +229,14 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
     </>
   );
   const toolbar = (
-    <div>
+    <div style={{ overflow: "visible", position: "relative", zIndex: 1000, paddingBottom: "10px" }}>
       <Toolbar className={styles.toolbar}>
         <ToolbarGroup>
           <Combobox
             disabled={!viewModel.tables || viewModel.tables.length === 0}
             placeholder="Select a table"
-            listbox={{ className: styles.listbox }}
-            positioning={{ autoSize: true }}
+            listbox={{ className: styles.listbox, style: { maxHeight: "300px" } }}
+            positioning={{ position: "below", align: "start", offset: { crossAxis: 0, mainAxis: 4 } }}
             onOptionSelect={onOptionSelect}
             value={viewModel.selectedTable?.label || ""}
             style={{ width: "200px" }}
@@ -289,10 +275,10 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
     </div>
   );
   return (
-    <div>
+    <div style={{ overflow: "visible", position: "relative", height: "100%" }}>
       {toolbar}
       {loadingConfig && (
-        <div>
+        <div style={{ padding: "20px" }}>
           <Spinner label="Loading configuration..." />
         </div>
       )}

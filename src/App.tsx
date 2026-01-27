@@ -6,6 +6,7 @@ import { ViewModel } from "./model/viewModel";
 
 import { dvService } from "./utils/dataverse";
 import { mockarooService } from "./utils/mockaroo";
+import { utlLib } from "./utils/utils";
 
 function App() {
   const { connection, isLoading, refreshConnection } = useConnection();
@@ -62,6 +63,12 @@ function App() {
     });
   }, [connection, dvSvc, addLog]);
 
+  const utils = useMemo(() => {
+    return new utlLib({
+      onLog: addLog,
+    });
+  }, [connection, dvSvc, addLog]);
+
   useEffect(() => {
     (async () => {
       const currentTheme = await window.toolboxAPI.utils.getCurrentTheme();
@@ -82,6 +89,7 @@ function App() {
         onLog={addLog}
         isLoading={isLoading}
         mckSvc={mockarooSvc}
+        utils={utils}
       />
     </FluentProvider>
   );

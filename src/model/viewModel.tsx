@@ -21,12 +21,24 @@ export class Table {
   logical: string;
   id: string;
   label: string;
-  setName?: string;
+  setName: string;
+  primaryNameColumn: string;
+  primaryIdColumn: string;
 
-  constructor(logical: string, id: string, label: string) {
+  constructor(
+    logical: string,
+    id: string,
+    label: string,
+    setName: string,
+    primaryNameColumn: string,
+    primaryIdColumn: string,
+  ) {
     this.logical = logical;
     this.id = id;
     this.label = label;
+    this.setName = setName;
+    this.primaryNameColumn = primaryNameColumn;
+    this.primaryIdColumn = primaryIdColumn;
     makeAutoObservable(this);
   }
 }

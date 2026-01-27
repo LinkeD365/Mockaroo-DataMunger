@@ -45,7 +45,7 @@ export function useToolboxEvents(onEvent: (event: string, data: any) => void) {
 
 export function useEventLog() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
-
+  
   // Use useCallback without dependencies since we're using the functional update form of setState
   // This ensures the functions are stable across renders and won't cause infinite loops
   const addLog = useCallback((message: string, type: LogEntry["type"] = "info") => {

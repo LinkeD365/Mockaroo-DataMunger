@@ -3,9 +3,9 @@ import { Table } from "./viewModel";
 
 export class Config {
   table: Table;
-  fields?: ConfigField[];
+  fields?: ConfigColumn[];
 
-  constructor(table: Table, fields?: ConfigField[]) {
+  constructor(table: Table, fields?: ConfigColumn[]) {
     this.table = table;
     this.fields = fields;
 
@@ -19,21 +19,24 @@ export class Config {
           name: field.logicalName,
           type: field.selectedMock?.mockName || field.selectedMock?.name || "",
           percentBlank: field.percBlank,
-          ...(field.selectedMock?.parameters?.reduce((acc, param) => {
-            if (param.value !== undefined) {
-              acc[param.name] = param.value;
-            }
-            return acc;
-          }, {} as Record<string, string>) ?? {}),
-          ...(field.type === "Picklist" && field.selectedValues.length > 0
-            ? { values: field.selectedValues, selectionStyle: "random" }
+          ...(field.selectedMock?.parameters?.reduce(
+            (acc, param) => {
+              if (param.value !== undefined) {
+                acc[param.name] = param.value;
+              }
+              return acc;
+            },
+            {} as Record<string, string>,
+          ) ?? {}),
+          ...(( field.type === "Picklist" || field.type === "Lookup") && field.selectedValues.length > 0
+            ? { values: field.selectedValues.map((v) => v.value), selectionStyle: "random" }
             : {}),
-        })) ?? []
+        })) ?? [],
     );
   }
 }
 
-export class ConfigField {
+export class ConfigColumn {
   logicalName: string;
   metadataId: string;
   type: string;
@@ -44,8 +47,21 @@ export class ConfigField {
   fieldDetails: { name: string; value: string }[] = [];
   selectedMock?: MockType;
   percBlank: number = 0;
-  selectedValues: string[] = [];
+  selectedValues: SelectionValue[] = [];
   choiceValues: SelectionValue[] = [];
+  parentTable?: Table;
+  fixedValue?: any;
+
+   get dbField(): string {
+    switch (this.type) {
+      case "Lookup":
+      case "Owner":
+        return this.logicalName + "@odata.bind";
+      default:
+        return this.logicalName;
+    }
+  }
+
   constructor(logicalName: string, metadataId: string, type: string, displayName: string) {
     this.logicalName = logicalName;
     this.metadataId = metadataId;
@@ -69,7 +85,7 @@ export class ConfigField {
       case "DateTime":
         return "datetime";
       case "Boolean":
-        return "Boolean";
+        return "boolean";
       case "Picklist":
         return "picklist";
       case "Lookup":

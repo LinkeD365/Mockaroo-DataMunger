@@ -40,6 +40,8 @@ const myTheme = themeQuartz.withParams({
 export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
   const { viewModel } = props;
 
+  console.log(viewModel.config);
+
   const [agCols] = React.useState<ColDef<DataRow>[]>(
     viewModel.config?.fields
       ?.filter((field) => field.include && field.selectedMock)
@@ -53,7 +55,7 @@ export const DataTab = observer((props: DataTabProps): React.JSX.Element => {
         flex: 1,
         wrapText: true,
         autoHeight: true,
-      })) || []
+      })) || [],
   );
 
   return (

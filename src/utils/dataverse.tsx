@@ -1,5 +1,5 @@
 import { toJS } from "mobx";
-import { SelectionValue, Config, ConfigField } from "../model/Config";
+import { SelectionValue, Config, ConfigColumn } from "../model/Config";
 import { Table } from "../model/viewModel";
 
 interface dvServiceProps {
@@ -31,6 +31,8 @@ export class dvService {
         "LogicalName",
         "DisplayName",
         "EntitySetName",
+        "PrimaryNameAttribute",
+        "PrimaryIdAttribute",
       ]);
 
       const tables: Table[] = tablesMetadata.value.map((tableMeta: any) => {
@@ -39,6 +41,8 @@ export class dvService {
           id: tableMeta.MetadataId,
           label: tableMeta.DisplayName?.UserLocalizedLabel?.Label || tableMeta.LogicalName,
           setName: tableMeta.EntitySetName,
+          primaryNameColumn: tableMeta.PrimaryNameAttribute,
+          primaryIdColumn: tableMeta.PrimaryIdAttribute,
         } as Table;
 
         return table;
@@ -67,27 +71,34 @@ export class dvService {
 
       this.onLog(`Attributes loaded for table: ${selectedTable.label}`, "success");
 
-      const configFields: ConfigField[] = entityMeta.value
+      const configFields: ConfigColumn[] = entityMeta.value
         .map((attr: any) => {
-          return new ConfigField(
+          return new ConfigColumn(
             attr.LogicalName,
             attr.MetadataId,
             attr.AttributeType,
-            attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName
+            attr.DisplayName?.UserLocalizedLabel?.Label || attr.LogicalName,
           );
         })
         .filter(
-          (field: ConfigField) =>
+          (field: ConfigColumn) =>
             field.type !== "Virtual" &&
             field.type !== "Customer" &&
             field.type !== "Owner" &&
             field.type !== "Uniqueidentifier" &&
             field.displayName &&
-            !field.displayName.toLowerCase().includes("deprecated")
+            !field.displayName.toLowerCase().includes("deprecated"),
         );
       const configObj = new Config(
-        new Table(selectedTable.logical, selectedTable.id, selectedTable.label),
-        configFields.sort((a, b) => a.displayName.localeCompare(b.displayName))
+        new Table(
+          selectedTable.logical,
+          selectedTable.id,
+          selectedTable.label,
+          selectedTable.setName,
+          selectedTable.primaryNameColumn,
+          selectedTable.primaryIdColumn,
+        ),
+        configFields.sort((a, b) => a.displayName.localeCompare(b.displayName)),
       );
 
       return configObj;
@@ -98,23 +109,23 @@ export class dvService {
     }
   }
 
-  async loadFieldDetails(table: Table, field: ConfigField): Promise<{ name: string; value: string }[]> {
-    if (!this.connection) {
-      this.onLog("No connection available", "error");
-      throw new Error("No connection available");
-    }
-    let url = `EntityDefinitions(LogicalName='${table.logical}')/Attributes(LogicalName='${field.logicalName}')`;
-    switch (field.type) {
-      case "String":
-      case "Memo":
-        url += "/Microsoft.Dynamics.CRM.StringAttributeMetadata?$select=MaxLength";
+  // async loadFieldDetails(table: Table, field: ConfigColumn): Promise<{ name: string; value: string }[]> {
+  //   if (!this.connection) {
+  //     this.onLog("No connection available", "error");
+  //     throw new Error("No connection available");
+  //   }
+  //   let url = `EntityDefinitions(LogicalName='${table.logical}')/Attributes(LogicalName='${field.logicalName}')`;
+  //   switch (field.type) {
+  //     case "String":
+  //     case "Memo":
+  //       url += "/Microsoft.Dynamics.CRM.StringAttributeMetadata?$select=MaxLength";
 
-        const stringMeta = await this.dvApi.queryData(url);
-    }
-    return [];
-  }
+  //       const stringMeta = await this.dvApi.queryData(url);
+  //   }
+  //   return [];
+  // }
 
-  async createData(table: Table, fields: ConfigField[], data: any[]): Promise<void> {
+  async createData(table: Table, fields: ConfigColumn[], data: any[]): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       if (!this.connection) {
         this.onLog("No connection available", "error");
@@ -134,7 +145,17 @@ export class dvService {
         .filter((f) => f.selectedMock?.type === "picklist")
         .forEach((fld) => {
           data.forEach((record) => {
-            record[fld.logicalName] = fld.choiceValues.find((cv) => cv.label === record[fld.logicalName])?.value;
+            record[fld.logicalName] = record[fld.logicalName + "_value"];
+            delete record[fld.logicalName + "_value"];
+          });
+        });
+      fields
+        .filter((f) => f.selectedMock?.type === "lookup")
+        .forEach((fld) => {
+          data.forEach((record) => {
+            record[fld.dbField] = "/" + fld.parentTable?.setName + "(" + record[fld.logicalName + "_value"] + ")";
+            delete record[fld.logicalName + "_value"];
+            delete record[fld.logicalName];
           });
         });
 
@@ -172,7 +193,7 @@ export class dvService {
 
       const options = picklistMeta.OptionSet?.Options || [];
       const values: SelectionValue[] = options.map(
-        (opt: any) => new SelectionValue(opt.Label?.UserLocalizedLabel?.Label || "", opt.Value.toString())
+        (opt: any) => new SelectionValue(opt.Label?.UserLocalizedLabel?.Label || "", opt.Value.toString()),
       );
       this.onLog(`Picklist values loaded for field: ${fieldLogicalName}`, "success");
       return values;
@@ -183,21 +204,52 @@ export class dvService {
     }
   }
 
-  async getLookupValues(tableLogicalName: string, fieldLogicalName: string): Promise<SelectionValue[]> {
-    if (!this.connection) {
-      this.onLog("No connection available", "error");
-      throw new Error("No connection available");
-    }
-    try {
-      this.onLog(`Loading lookup values for field: ${fieldLogicalName}`, "info");
-      const lookupMeta =
+  async getLookupValues(
+    table: string,
+    nameColumn: string,
+    idColumn: string,
+    searchQuery: string,
+  ): Promise<SelectionValue[]> {
+    return new Promise<SelectionValue[]>(async (resolve, reject) => {
+      if (!this.connection) {
+        throw new Error("No connection available");
+      }
+      console.log(table, nameColumn, idColumn, searchQuery);
+      try {
+        this.onLog(`Loading lookup values for field: ${nameColumn}`, "info");
+        const escapedSearch = searchQuery.replace(/'/g, "''");
         // Implementation to retrieve lookup values goes here
-        this.onLog(`Lookup values loaded for field: ${fieldLogicalName}`, "success");
-      return [];
-    } catch (error) {
-      this.onLog(`Error loading lookup values: ${error}`, "error");
-      console.error("Error loading lookup values:", error);
-      throw error;
-    }
+        const lookupMeta = await this.dvApi.queryData(
+          `${table}?$filter=contains(${nameColumn},'${escapedSearch}')&$select=${nameColumn},${idColumn}&$top=20`,
+        );
+        console.log("Lookup Meta:", lookupMeta);
+        this.onLog(`Lookup values loaded for field: ${nameColumn}`, "success");
+        resolve(lookupMeta.value.map((item: any) => new SelectionValue(item[nameColumn], item[idColumn])));
+      } catch (error) {
+        console.error("Error loading lookup values:", error);
+        reject(error);
+      }
+    });
+  }
+
+  async getTableInfo(table: string, column: string): Promise<string> {
+    return new Promise<string>(async (resolve, reject) => {
+      if (!this.connection) {
+        this.onLog("No connection available", "error");
+        reject(new Error("No connection available"));
+        return;
+      }
+      try {
+        let url = `EntityDefinitions(LogicalName='${table}')/Attributes(LogicalName='${column}')/Microsoft.Dynamics.CRM.LookupAttributeMetadata?$select=Targets`;
+        const lookupMeta: any = await this.dvApi.queryData(url);
+        const targets: string[] = lookupMeta.Targets || [];
+
+        resolve(targets[0]);
+      } catch (error) {
+        this.onLog(`Error loading table info: ${error}`, "error");
+        console.error("Error loading table info:", error);
+        reject(error);
+      }
+    });
   }
 }

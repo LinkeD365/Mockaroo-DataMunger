@@ -24,11 +24,13 @@ import { DatabaseArrowUpFilled, DatabaseCheckmarkFilled } from "@fluentui/react-
 import { ConfigTab } from "./ConfigTab";
 import { mockarooService } from "../utils/mockaroo";
 import { DataTab } from "./DataTab";
+import { utlLib } from "../utils/utils";
 
 interface MockarooMainProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   mckSvc: mockarooService;
+  utils: utlLib;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -58,7 +60,7 @@ const useStyles = makeStyles({
 });
 
 export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Element => {
-  const { connection, dvSvc, mckSvc, isLoading, viewModel, onLog } = props;
+  const { connection, dvSvc, mckSvc, utils, isLoading, viewModel, onLog } = props;
 
   //#region useState hooks
   // Track if tables have been loaded to avoid infinite loop
@@ -124,24 +126,63 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
       onLog("Mockaroo API key appears to be invalid. Please check your API key.", "error");
       throw new Error("Mockaroo API key appears to be invalid.");
     }
+    console.log("Generating data with config:", viewModel.config);
     mckSvc
       .getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "", viewModel.mockarooApiKey)
       .then((data) => {
         viewModel.data = data;
+
         viewModel.data = viewModel.data.map((item) => ({
           ...item,
           "@odata.type": `Microsoft.Dynamics.CRM.${viewModel.selectedTable?.logical}`,
           ...viewModel.config?.fields
-            ?.filter((f) => f.selectedMock?.fixed)
-            .reduce((acc, field) => ({ ...acc, [field.logicalName]: field.selectedValues[0] }), {}),
+            ?.filter(
+              (f) => f.selectedMock?.fixed && (f.selectedMock.type === "picklist" || f.selectedMock.type === "lookup"),
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName]: field.selectedValues[0].label,
+                [field.logicalName + "_value"]: field.selectedValues[0].value,
+              }),
+              {},
+            ),
+          ...viewModel.config?.fields
+            ?.filter(
+              (f) =>
+                !f.selectedMock?.fixed && (f.selectedMock?.type === "picklist" || f.selectedMock?.type === "lookup"),
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName + "_value"]: item[field.logicalName],
+                [field.logicalName]: field.selectedValues.find((sv) => sv.value === item[field.logicalName].toString())
+                  ?.label,
+              }),
+              {},
+            ),
+          ...viewModel.config?.fields
+            ?.filter(
+              (f) =>
+                f.selectedMock?.fixed &&
+                (f.selectedMock?.type !== "picklist" &&
+                f.selectedMock?.type !== "lookup")
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName]: field.fixedValue,
+              }),
+              {},
+            ),
         }));
+
         window.toolboxAPI.utils.showNotification({
           title: "Mock Data Generated",
           body: `${viewModel.data.length} mock data generated successfully`,
           type: "success",
         });
         setSelectedTab("data");
-        console.log("Generated Data:", viewModel.data);
         onLog(`Generated ${viewModel.data.length} mock data records`, "success");
       });
   }
@@ -246,15 +287,29 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   );
 
   return (
-    <>
+    <div
+      style={{
+        overflow: "visible",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {tabs}
       {saveDialog}
       {selectedTab === "config" && (
-        <ConfigTab connection={connection} dvSvc={dvSvc} isLoading={isLoading} viewModel={viewModel} onLog={onLog} />
+        <ConfigTab
+          connection={connection}
+          dvSvc={dvSvc}
+          utils={utils}
+          isLoading={isLoading}
+          viewModel={viewModel}
+          onLog={onLog}
+        />
       )}
       {selectedTab === "data" && (
         <DataTab connection={connection} dvSvc={dvSvc} isLoading={isLoading} viewModel={viewModel} onLog={onLog} />
       )}
-    </>
+    </div>
   );
 });
