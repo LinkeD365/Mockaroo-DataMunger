@@ -24,11 +24,13 @@ import { DatabaseArrowUpFilled, DatabaseCheckmarkFilled } from "@fluentui/react-
 import { ConfigTab } from "./ConfigTab";
 import { mockarooService } from "../utils/mockaroo";
 import { DataTab } from "./DataTab";
+import { UtilLib } from "../utils/utils";
 
 interface MockarooMainProps {
   connection: ToolBoxAPI.DataverseConnection | null;
   dvSvc: dvService;
   mckSvc: mockarooService;
+  utils: UtilLib;
   isLoading: boolean;
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
@@ -58,7 +60,7 @@ const useStyles = makeStyles({
 });
 
 export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Element => {
-  const { connection, dvSvc, mckSvc, isLoading, viewModel, onLog } = props;
+  const { connection, dvSvc, mckSvc, utils, isLoading, viewModel, onLog } = props;
 
   //#region useState hooks
   // Track if tables have been loaded to avoid infinite loop
@@ -70,14 +72,23 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   const styles = useStyles();
 
   React.useEffect(() => {
-    //console.log("Effect to load tables triggered", viewModel.tables.length, connection, isLoading, tablesLoaded);
-
     if (connection && !tablesLoaded && viewModel.tables.length === 0) {
-      dvSvc.loadTables().then((tables) => {
-        onLog("Tables loaded successfully", "success");
-        viewModel.tables = tables;
-        setTablesLoaded(true);
-      });
+      dvSvc
+        .loadTables()
+        .then((tables) => {
+          onLog("Tables loaded successfully", "success");
+          viewModel.tables = tables;
+          setTablesLoaded(true);
+        })
+        .catch((err) => {
+          window.toolboxAPI.utils.showNotification({
+            title: "Error Loading Tables",
+            body: `There was an error loading tables from Dataverse: ${err}`,
+            type: "error",
+            duration: 10000,
+          });
+          onLog(`Error loading tables: ${err}`, "error");
+        });
     }
   }, [connection, dvSvc, onLog, tablesLoaded]);
 
@@ -104,26 +115,111 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   const onMainTabSelect = (_event: SelectTabEvent, data: SelectTabData) => {
     setSelectedTab(data.value);
   };
-
+  const MIN_API_KEY_LENGTH = 8;
   function getData(): void {
-    mckSvc.getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "").then((data) => {
-      console.log("Mock data received from Mockaroo:", data);
-      viewModel.data = data;
-      viewModel.data = viewModel.data.map((item) => ({
-        ...item,
-        "@odata.type": `Microsoft.Dynamics.CRM.${
-          viewModel.tables.find((t) => t.logical === viewModel.selectedTableName)?.logical
-        }`,
-      }));
+    const trimmedApiKey = viewModel.mockarooApiKey.trim();
+    if (!trimmedApiKey) {
+      onLog("Mockaroo API key is not configured. Please enter your API key.", "error");
       window.toolboxAPI.utils.showNotification({
-        title: "Mock Data Generated",
-        body: `${viewModel.data.length} mock data generated successfully`,
-        type: "success",
+        title: "Mockaroo API Key Missing",
+        body: "Please enter your Mockaroo API key before generating data.",
+        type: "error",
       });
-      setSelectedTab("data");
-      onLog(`Generated ${viewModel.data.length} mock data records`, "success");
-      console.log("Mock data received from Mockaroo:", viewModel.data);
-    });
+      return;
+    }
+    if (trimmedApiKey.length < MIN_API_KEY_LENGTH) {
+      onLog("Mockaroo API key appears to be invalid. Please check your API key.", "error");
+      window.toolboxAPI.utils.showNotification({
+        title: "Mockaroo API Key Invalid",
+        body: "The API key looks too short. Please double-check and try again.",
+        type: "error",
+      });
+      return;
+    }
+
+    const fieldsNeedingSelection = viewModel.config?.fields?.filter(
+      (f) =>
+        f.include &&
+        f.selectedMock?.fixed &&
+        (f.selectedMock.type === "picklist" || f.selectedMock.type === "lookup") &&
+        f.selectedValues.length === 0,
+    );
+    if (fieldsNeedingSelection && fieldsNeedingSelection.length > 0) {
+      const firstMissing = fieldsNeedingSelection[0];
+      window.toolboxAPI.utils.showNotification({
+        title: "Selection Required",
+        body: `Choose a value for ${firstMissing.displayName} before generating data.`,
+        type: "warning",
+      });
+      onLog("Generate blocked: fixed picklist/lookup requires a selected value", "warning");
+      return;
+    }
+
+    mckSvc
+      .getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "", viewModel.mockarooApiKey)
+      .then((data) => {
+        viewModel.data = data;
+
+        viewModel.data = viewModel.data.map((item) => ({
+          ...item,
+          "@odata.type": `Microsoft.Dynamics.CRM.${viewModel.selectedTable?.logical}`,
+          ...viewModel.config?.fields
+            ?.filter(
+              (f) => f.selectedMock?.fixed && (f.selectedMock.type === "picklist" || f.selectedMock.type === "lookup"),
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName]: field.selectedValues[0].label,
+                [field.logicalName + "_value"]: field.selectedValues[0].value,
+              }),
+              {},
+            ),
+          ...viewModel.config?.fields
+            ?.filter(
+              (f) =>
+                !f.selectedMock?.fixed && (f.selectedMock?.type === "picklist" || f.selectedMock?.type === "lookup"),
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName + "_value"]: item[field.logicalName],
+                [field.logicalName]: field.selectedValues.find((sv) => sv.value === item[field.logicalName].toString())
+                  ?.label,
+              }),
+              {},
+            ),
+          // Apply fixed values for fields that are not picklist/lookup (those are handled above)
+          ...viewModel.config?.fields
+            ?.filter(
+              (f) => f.selectedMock?.fixed && f.selectedMock?.type !== "picklist" && f.selectedMock?.type !== "lookup",
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName]: field.fixedValue,
+              }),
+              {},
+            ),
+        }));
+
+        window.toolboxAPI.utils.showNotification({
+          title: "Mock Data Generated",
+          body: `${viewModel.data.length} mock data generated successfully`,
+          type: "success",
+        });
+        setSelectedTab("data");
+        onLog(`Generated ${viewModel.data.length} mock data records`, "success");
+      })
+      .catch((err) => {
+        window.toolboxAPI.utils.showNotification({
+          title: "Mockaroo Error",
+          body: `Could not generate data: ${err}`,
+          type: "error",
+          duration: 8000,
+        });
+        onLog(`Failed to generate mock data: ${err}`, "error");
+      });
   }
 
   function createDataConfirmation(): void {
@@ -131,13 +227,9 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   }
 
   async function createData(): Promise<void> {
-    console.log("Creating data in Dataverse:", viewModel.data);
     setCreatingData(true);
     await dvSvc
-      .createData(
-        viewModel.tables.find((t) => t.logical === viewModel.selectedTableName) ?? undefined,
-        viewModel.data || []
-      )
+      .createData(viewModel.selectedTable!, viewModel.config?.fields || [], viewModel.data || [])
       .then(() => {
         window.toolboxAPI.utils.showNotification({
           title: "Data Created",
@@ -154,6 +246,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
           title: "Data Creation Error",
           body: `Not all records could be created. Please check your configuration and the error message: ${err}`,
           type: "error",
+          duration: 10000,
         });
       })
       .finally(() => {
@@ -163,24 +256,17 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   }
 
   const saveDialog = (
-    <Dialog open={openSaveDialog} onOpenChange={(event, data) => setOpenSaveDialog(data.open)}>
+    <Dialog open={openSaveDialog} onOpenChange={(_e, data) => setOpenSaveDialog(data.open)}>
       <DialogSurface>
         <DialogBody>
           <DialogTitle>Create Data</DialogTitle>
           <DialogContent>
             {!creatingData && (
               <div>
-                Do you want to create {viewModel.data?.length} records in the{" "}
-                {viewModel.tables.find((t) => t.logical === viewModel.selectedTableName)?.label} table?
+                Do you want to create {viewModel.data?.length} records in the {viewModel.selectedTable?.label} table?
               </div>
             )}
-            {creatingData && (
-              <Spinner
-                label={
-                  "Creating " + viewModel.tables.find((t) => t.logical === viewModel.selectedTableName)?.label + "(s)"
-                }
-              />
-            )}
+            {creatingData && <Spinner label={"Creating " + viewModel.selectedTable?.label + "(s)"} />}
           </DialogContent>
           <DialogActions>
             <Button appearance="primary" disabled={creatingData} onClick={createData}>
@@ -211,7 +297,9 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
             <Button
               className={styles.button}
               icon={<DatabaseArrowUpFilled />}
-              disabled={(viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0}
+              disabled={
+                (viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0 || !viewModel.mockarooApiKey
+              }
               onClick={getData}
             />
           </Tooltip>
@@ -234,21 +322,29 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   );
 
   return (
-    <>
+    <div
+      style={{
+        overflow: "visible",
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       {tabs}
       {saveDialog}
       {selectedTab === "config" && (
         <ConfigTab
           connection={connection}
-          dvService={dvSvc}
+          dvSvc={dvSvc}
+          utils={utils}
           isLoading={isLoading}
           viewModel={viewModel}
           onLog={onLog}
         />
       )}
       {selectedTab === "data" && (
-        <DataTab connection={connection} dvService={dvSvc} isLoading={isLoading} viewModel={viewModel} onLog={onLog} />
+        <DataTab connection={connection} dvSvc={dvSvc} isLoading={isLoading} viewModel={viewModel} onLog={onLog} />
       )}
-    </>
+    </div>
   );
 });

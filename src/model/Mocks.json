@@ -2,87 +2,87 @@
   "types": [
     {
       "name": "Address Line 2",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Continent",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Country Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Elevation (Feet)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport GPS Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Latitude",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Longitude",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Municipality",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Airport Region Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Animal Common Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Animal Scientific Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "App Bundle ID",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "App Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "App Version",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Avatar",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "height",
@@ -100,52 +100,52 @@
     },
     {
       "name": "Bank City",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Bank Country Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Bank LEI",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Bank Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Bank RIAD Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Bank Routing Number",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Bank State",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Bank Street Address",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Bank SWIFT BIC",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Base64 Image URL",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -162,12 +162,12 @@
     },
     {
       "name": "Bitcoin Address",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Blank",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -177,17 +177,17 @@
     },
     {
       "name": "Buzzword",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Car Make",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Car Model",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -197,21 +197,21 @@
     },
     {
       "name": "Car VIN",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Catch Phrase",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Character Sequence",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "format",
-          "type": "string",
+          "type": "string|memo",
           "description": "A string of characters, digits, and symbols",
           "default": null
         }
@@ -219,52 +219,52 @@
     },
     {
       "name": "City",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Color",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Company Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Construction Heavy Equipment",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Construction Material",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Construction Role",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Construction Standard Cost Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Construction Subcontract Category",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Construction Trade",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Country",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "countries",
@@ -276,27 +276,27 @@
     },
     {
       "name": "Country Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Credit Card #",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Credit Card Type",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Currency",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Currency Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -311,7 +311,7 @@
         },
         {
           "name": "selectionStyle",
-          "type": "string",
+          "type": "string|memo",
           "description": null,
           "values": ["random", "sequential", "weighted", "dynamic", "cartesian"],
           "default": "random"
@@ -330,19 +330,19 @@
       "parameters": [
         {
           "name": "dataset",
-          "type": "string",
+          "type": "string|memo",
           "description": "The name of a saved dataset",
           "default": null
         },
         {
           "name": "column",
-          "type": "string",
+          "type": "string|memo",
           "description": "The name of the column in the saved dataset",
           "default": null
         },
         {
           "name": "selectionStyle",
-          "type": "string",
+          "type": "string|memo",
           "description": null,
           "values": ["random", "sequential", "weighted", "dynamic", "cartesian"],
           "default": "random"
@@ -361,19 +361,19 @@
       "parameters": [
         {
           "name": "min",
-          "type": "string",
+          "type": "string|memo",
           "description": "The minimum date in mm/dd/yyyy format.",
           "default": "12/9/2025"
         },
         {
           "name": "max",
-          "type": "string",
+          "type": "string|memo",
           "description": "The maximum date in mm/dd/yyyy format.",
-          "default": "12/9/2024"
+          "default": "12/9/2027"
         },
         {
           "name": "format",
-          "type": "string",
+          "type": "string|memo",
           "description": "(optional) The format to output. This can be any format directive supported by ruby <a target=\"_blank\" href=\"http://www.ruby-doc.org/core-1.9.3/Time.html#method-i-strftime\">Time.strftime</a>.  Defaults to ISO 8601 format. Example value: \"2007-11-19T08:37:48-06:00\".",
           "default": "%FT%T%:z"
         }
@@ -381,21 +381,21 @@
     },
     {
       "name": "Department (Corporate)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Department (Retail)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Digit Sequence",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "format",
-          "type": "string",
+          "type": "string|memo",
           "description": "A string of characters, digits, and symbols",
           "default": null
         }
@@ -403,27 +403,27 @@
     },
     {
       "name": "Domain Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Drug Company",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Drug Name (Brand)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Drug Name (Generic)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Dummy Image URL",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "minHeight",
@@ -451,7 +451,7 @@
         },
         {
           "name": "format",
-          "type": "string",
+          "type": "string|memo",
           "description": "The image format",
           "values": ["random", "png", "gif", "jpg"],
           "default": null
@@ -460,27 +460,27 @@
     },
     {
       "name": "DUNS Number",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "EIN",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Email Address",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Encrypt",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Ethereum Address",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -497,107 +497,107 @@
     },
     {
       "name": "Fake Company Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Family Name (Chinese)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "FDA NDC Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "File Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "First Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "First Name (European)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "First Name (Female)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "First Name (Male)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Airline Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Airline Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Arrival Airport",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Arrival Airport Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Arrival City",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Arrival Country",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Departure Airport",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Departure Airport Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Departure City",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Departure Country",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Departure Time",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Duration (Hours)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Flight Number",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -606,7 +606,7 @@
       "parameters": [
         {
           "name": "value",
-          "type": "string",
+          "type": "string|memo",
           "description": null,
           "default": null
         }
@@ -614,32 +614,32 @@
     },
     {
       "name": "Frequency",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Full Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Gender",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Gender (abbrev)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Gender (Binary)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Gender (Facebook)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -656,152 +656,152 @@
     },
     {
       "name": "Given Name (Chinese)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "GUID",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "HCPCS Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "HCPCS Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Hex Color",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Hospital City",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Hospital Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Hospital NPI",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Hospital Postal Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Hospital State",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Hospital Street Address",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "IBAN",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD10 Diagnosis Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD10 Dx Desc (Long)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD10 Dx Desc (Short)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD10 Proc Desc (Long)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD10 Proc Desc (Short)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD10 Procedure Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD9 Diagnosis Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD9 Dx Desc (Long)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD9 Dx Desc (Short)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD9 Proc Desc (Long)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD9 Proc Desc (Short)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ICD9 Procedure Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "IP Address v4",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "IP Address v4 CIDR",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "IP Address v6",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "IP Address v6 CIDR",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ISBN",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Job Title",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -824,17 +824,17 @@
     },
     {
       "name": "Language",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Language Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Last Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -844,7 +844,7 @@
     },
     {
       "name": "LinkedIn Skill",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -854,47 +854,47 @@
     },
     {
       "name": "MAC Address",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "MD5",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Medicare Beneficiary ID",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "MIME Type",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Mobile Device Brand",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Mobile Device Model",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Mobile Device OS",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Mobile Device Release Date",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Money",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "min",
@@ -910,7 +910,7 @@
         },
         {
           "name": "symbol",
-          "type": "string",
+          "type": "string|memo",
           "description": "The currency symbol",
           "values": ["$", "£", "€", "¥", "random", "none"],
           "default": "$"
@@ -919,22 +919,22 @@
     },
     {
       "name": "MongoDB ObjectID",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Movie Genres",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Movie Title",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Nato Phonetic",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "min",
@@ -952,12 +952,12 @@
     },
     {
       "name": "Naughty String",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "NHS Number",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -1010,7 +1010,7 @@
     },
     {
       "name": "Paragraphs",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "min",
@@ -1028,7 +1028,7 @@
     },
     {
       "name": "Password",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "min_length",
@@ -1064,16 +1064,16 @@
     },
     {
       "name": "Password Hash",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Phone",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "format",
-          "type": "string",
+          "type": "string|memo",
           "description": "The phone number format",
           "values": [
             "###-###-####",
@@ -1091,17 +1091,17 @@
     },
     {
       "name": "Plant Common Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Plant Family",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Plant Scientific Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
@@ -1118,47 +1118,47 @@
     },
     {
       "name": "Postal Code",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Product Category",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Product Description",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Product (Grocery)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Product Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Product Price",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Product Subcategory",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Race",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Regular Expression",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "value",
@@ -1197,7 +1197,7 @@
       "parameters": [
         {
           "name": "scenario",
-          "type": "string",
+          "type": "string|memo",
           "description": "The name of a scenario",
           "default": null
         }
@@ -1205,7 +1205,7 @@
     },
     {
       "name": "Sentences",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "min",
@@ -1247,36 +1247,36 @@
     },
     {
       "name": "SHA1",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "SHA256",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Shirt Size",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Short Hex Color",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Slogan",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "SQL Expression",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "value",
-          "type": "string",
+          "type": "string|memo",
           "description": "SQL code to include verbatim in the generated output",
           "default": null
         }
@@ -1284,12 +1284,12 @@
     },
     {
       "name": "SSN",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "State",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "onlyUSPlaces",
@@ -1301,7 +1301,7 @@
     },
     {
       "name": "State (abbrev)",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "onlyUSPlaces",
@@ -1313,66 +1313,66 @@
     },
     {
       "name": "Stock Industry",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Stock Market",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Stock Market Cap",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Stock Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Stock Sector",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Stock Symbol",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Street Address",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Street Name",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Street Number",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Street Suffix",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Suffix",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Template",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "value",
-          "type": "string",
+          "type": "string|memo",
           "description": null,
           "default": null
         }
@@ -1380,32 +1380,32 @@
     },
     {
       "name": "Tezos Account",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Tezos Block",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Tezos Contract",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Tezos Operation",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Tezos Signature",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Time",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "min",
@@ -1429,32 +1429,32 @@
     },
     {
       "name": "Time Zone",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Title",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Top Level Domain",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "ULID",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "University",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "URL",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "includeProtocol",
@@ -1484,17 +1484,17 @@
     },
     {
       "name": "User Agent",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Username",
-      "type": "string",
+      "type": "string|memo",
       "parameters": []
     },
     {
       "name": "Words",
-      "type": "string",
+      "type": "string|memo",
       "parameters": [
         {
           "name": "min",
@@ -1509,6 +1509,24 @@
           "default": 20
         }
       ]
-    }
+    },
+    {
+      "name": "Fixed Picklist",
+      "type": "picklist",
+      "fixed": true,
+      "useMockaroo": false
+    },
+    {
+      "name": "Random Picklist",
+      "mockName": "Custom List",
+      "type": "picklist"
+    },
+    { "name": "Fixed Lookup", "type": "lookup", "fixed": true, "useMockaroo": false },
+    {
+      "name": "Random Lookup",
+      "mockName": "Custom List",
+      "type": "lookup"
+    },
+    { "name": "Fixed Boolean", "fixed": true, "type": "boolean" }
   ]
 }

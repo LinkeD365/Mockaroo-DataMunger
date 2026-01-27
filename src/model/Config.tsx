@@ -3,9 +3,9 @@ import { Table } from "./viewModel";
 
 export class Config {
   table: Table;
-  fields?: ConfigField[];
+  fields?: ConfigColumn[];
 
-  constructor(table: Table, fields?: ConfigField[]) {
+  constructor(table: Table, fields?: ConfigColumn[]) {
     this.table = table;
     this.fields = fields;
 
@@ -14,13 +14,32 @@ export class Config {
   get jsonString(): string {
     return JSON.stringify(
       this.fields
-        ?.filter((field) => field.include)
-        .map((field) => ({ name: field.logicalName, type: field.selectedMock?.name || "" })) ?? []
+        // Only include fields that are configured for Mockaroo-based generation and not fixed values.
+        // Fixed mocks (selectedMock.fixed === true) represent constant values that are applied outside
+        // of Mockaroo, so they are intentionally excluded from this JSON payload.
+        ?.filter((field) => field.include && field.selectedMock && !field.selectedMock.fixed)
+        .map((field) => ({
+          name: field.logicalName,
+          type: field.selectedMock?.mockName || field.selectedMock?.name || "",
+          percentBlank: field.percBlank,
+          ...(field.selectedMock?.parameters?.reduce(
+            (acc, param) => {
+              if (param.value !== undefined) {
+                acc[param.name] = param.value;
+              }
+              return acc;
+            },
+            {} as Record<string, string>,
+          ) ?? {}),
+          ...(( field.type === "Picklist" || field.type === "Lookup") && field.selectedValues.length > 0
+            ? { values: field.selectedValues.map((v) => v.value), selectionStyle: "random" }
+            : {}),
+        })) ?? [],
     );
   }
 }
 
-export class ConfigField {
+export class ConfigColumn {
   logicalName: string;
   metadataId: string;
   type: string;
@@ -30,6 +49,21 @@ export class ConfigField {
   detailsRetrieved: boolean = false;
   fieldDetails: { name: string; value: string }[] = [];
   selectedMock?: MockType;
+  percBlank: number = 0;
+  selectedValues: SelectionValue[] = [];
+  choiceValues: SelectionValue[] = [];
+  parentTable?: Table;
+  fixedValue?: any;
+
+   get dbField(): string {
+    switch (this.type) {
+      case "Lookup":
+      case "Owner":
+        return this.logicalName + "@odata.bind";
+      default:
+        return this.logicalName;
+    }
+  }
 
   constructor(logicalName: string, metadataId: string, type: string, displayName: string) {
     this.logicalName = logicalName;
@@ -49,11 +83,16 @@ export class ConfigField {
       case "Integer":
       case "Double":
       case "Decimal":
+      case "Money":
         return "integer";
       case "DateTime":
         return "datetime";
       case "Boolean":
-        return "Boolean";
+        return "boolean";
+      case "Picklist":
+        return "picklist";
+      case "Lookup":
+        return "lookup";
       default:
         return "Unknown";
     }
@@ -62,7 +101,10 @@ export class ConfigField {
 
 export class MockType {
   name: string;
+  mockName?: string;
   type: string;
+  useMockaroo: boolean = true;
+  fixed: boolean = false;
   parameters?: MockParameter[];
 
   constructor(name: string, type: string) {
@@ -75,11 +117,22 @@ export class MockType {
 export class MockParameter {
   name: string;
   type: string;
+  value?: string;
+  description?: string;
   default?: string;
 
   constructor(name: string, type: string) {
     this.name = name;
     this.type = type;
     makeAutoObservable(this);
+  }
+}
+
+export class SelectionValue {
+  label: string;
+  value: string;
+  constructor(label: string, value: string) {
+    this.label = label;
+    this.value = value;
   }
 }

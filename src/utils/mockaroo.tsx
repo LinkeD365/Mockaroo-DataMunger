@@ -2,28 +2,28 @@ import { dvService } from "./dataverse";
 
 interface mockarooServiceProps {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dataverse: dvService;
+  dvSvc: dvService;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
+
+// Mockaroo API keys are typically 8 characters long (hexadecimal format)
+
 export class mockarooService {
   connection: ToolBoxAPI.DataverseConnection | null;
-  dataverse: dvService;
+  dvSvc: dvService;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 
   constructor(props: mockarooServiceProps) {
     this.connection = props.connection;
-    this.dataverse = props.dataverse;
+    this.dvSvc = props.dvSvc;
     this.onLog = props.onLog;
   }
 
-  async getMockData(recordCount: number, configJson: string): Promise<any[]> {
-    const apiKey = import.meta.env.VITE_MOCKAROO_API_KEY;
-    if (!apiKey) {
-      this.onLog("Mockaroo API key is not configured. Please set VITE_MOCKAROO_API_KEY in the environment.", "error");
-      throw new Error("Mockaroo API key is not configured. Please set VITE_MOCKAROO_API_KEY in the environment.");
-    }
-    const url = `https://api.mockaroo.com/api/generate.json?key=${apiKey}&count=${recordCount}`;
-    console.log("configJson:", configJson);
+  async getMockData(recordCount: number, configJson: string, apiKey: string): Promise<any[]> {
+    this.onLog(`Mockaroo config: ${configJson}`, "info");
+    // Security: The Mockaroo API key is sent over the network. Ensure that a read-only or limited-scope key is used and kept secret.
+    const url = `https://api.mockaroo.com/api/generate.json?key=${encodeURIComponent(apiKey)}&count=${recordCount}`;
+
     const request = new Request(url, {
       method: "POST",
       headers: {
@@ -31,13 +31,13 @@ export class mockarooService {
       },
       body: configJson,
     });
-    console.log("Fetching mock data from Mockaroo with config:", request);
+
     const response = await fetch(request);
     if (!response.ok) {
       this.onLog(`Error fetching mock data: ${response.statusText}`, "error");
       throw new Error(`Error fetching mock data: ${response.statusText}`);
     }
-    //console.log(await response.text());
+    //
     this.onLog(`Generating ${recordCount} mock data records...`, "info");
     return response.json();
   }

@@ -6,6 +6,7 @@ import { ViewModel } from "./model/viewModel";
 
 import { dvService } from "./utils/dataverse";
 import { mockarooService } from "./utils/mockaroo";
+import { UtilLib } from "./utils/utils";
 
 function App() {
   const { connection, isLoading, refreshConnection } = useConnection();
@@ -30,8 +31,8 @@ function App() {
           // Terminal events handled by dedicated components
           break;
         case "settings:updated":
-          console.log("Theme or settings updated, refreshing theme");
           const theme = await window.toolboxAPI.utils.getCurrentTheme();
+          document.body.dataset.agThemeMode = theme;
           setTheme(theme);
           break;
       }
@@ -46,7 +47,7 @@ function App() {
 
   const [viewModel] = useState(() => new ViewModel());
   const dvSvc = useMemo(() => {
-    console.log("Creating dvService with connection:", connection);
+    if (!connection) return null;
     return new dvService({
       connection: connection,
       dvApi: window.dataverseAPI,
@@ -55,10 +56,16 @@ function App() {
   }, [connection, addLog]);
 
   const mockarooSvc = useMemo(() => {
-    console.log("Creating mockarooService with connection:", connection);
+    if (!dvSvc) return null;
     return new mockarooService({
       connection: connection,
-      dataverse: dvSvc,
+      dvSvc: dvSvc,
+      onLog: addLog,
+    });
+  }, [connection, dvSvc, addLog]);
+
+  const utils = useMemo(() => {
+    return new UtilLib({
       onLog: addLog,
     });
   }, [connection, dvSvc, addLog]);
@@ -67,18 +74,28 @@ function App() {
     (async () => {
       const currentTheme = await window.toolboxAPI.utils.getCurrentTheme();
       setTheme(currentTheme);
+      document.body.dataset.agThemeMode = currentTheme;
+      const mockarooApiKey = await window.toolboxAPI.settings.get("mockarooApiKey");
+      if (mockarooApiKey) {
+        viewModel.mockarooApiKey = mockarooApiKey;
+      }
     })();
   }, []);
   return (
     <FluentProvider theme={theme === "dark" ? webDarkTheme : webLightTheme}>
-      <MockarooMain
-        connection={connection}
-        viewModel={viewModel}
-        dvSvc={dvSvc}
-        onLog={addLog}
-        isLoading={isLoading}
-        mckSvc={mockarooSvc}
-      />
+      {dvSvc && mockarooSvc ? (
+        <MockarooMain
+          connection={connection}
+          viewModel={viewModel}
+          dvSvc={dvSvc}
+          onLog={addLog}
+          isLoading={isLoading}
+          mckSvc={mockarooSvc}
+          utils={utils}
+        />
+      ) : (
+        <div>Loading...</div>
+      )}
     </FluentProvider>
   );
 }

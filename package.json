@@ -1,18 +1,30 @@
 {
-  "name": "pptb-mockaroo-data-munger",
-  "version": "0.1.1",
+  "name": "@linked365/pptb-mockaroo-data-munger",
+  "version": "0.1.0",
   "displayName": "Mockaroo Data Munger",
   "description": "A tool to mock data from Mockaroo into your Dataverse tables",
   "main": "index.html",
-  "author": "Power Platform ToolBox",
+  "author": "LinkeD365",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
   },
+  "contributors": [
+    {
+      "name": "LinkeD365",
+      "url": "https://github.com/LinkeD365"
+    }
+  ],
   "cspExceptions": {
     "connect-src": [
       "https://api.mockaroo.com"
     ]
+  },
+  "configurations": {
+    "repository": "https://github.com/LinkeD365/Mockaroo-DataMunger",
+    "website": "https://linked365.blog",
+    "readmeUrl": "https://raw.githubusercontent.com/LinkeD365/Mockaroo-DataMunger/refs/heads/master/README.md",
+    "iconUrl": "https://raw.githubusercontent.com/LinkeD365/Mockaroo-DataMunger/refs/heads/master/assets/smallIcon.png"
   },
   "scripts": {
     "build": "tsc && vite build",
@@ -24,13 +36,15 @@
   "dependencies": {
     "@fluentui/react-components": "^9.72.8",
     "@fluentui/react-icons": "^2.0.316",
+    "ag-grid-community": "^35.0.0",
+    "ag-grid-react": "^35.0.0",
     "mobx": "^6.15.0",
     "mobx-react": "^9.2.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@pptb/types": "link:..\\desktop-app\\packages",
+    "@pptb/types": "^1.0.17",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
