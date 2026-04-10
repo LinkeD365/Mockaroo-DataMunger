@@ -24,6 +24,31 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
   const { dvSvc, column, vm, utils, onUpdate, onLog } = props;
   const [openConfig, setOpenConfig] = React.useState(false);
 
+  const isFixedStringMock =
+    Boolean(column.selectedMock?.fixed) &&
+    column.mockMatch === "string" &&
+    Boolean(column.selectedMock?.type?.includes("string"));
+
+  React.useEffect(() => {
+    if (
+      (!column.include || !column.selectedMock) &&
+      (column.selectedValues.length > 0 || column.fixedValue !== undefined)
+    ) {
+      column.selectedValues = [];
+      column.fixedValue = undefined;
+      onUpdate(column);
+    }
+  }, [column, column.include, column.selectedMock, column.selectedValues.length, column.fixedValue, onUpdate]);
+
+  const selectedValueText =
+    column.include && column.selectedMock && column.selectedValues.length > 0
+      ? column.selectedValues.map((item) => item.label).join(", ")
+      : column.include && column.selectedMock?.type === "boolean" && column.fixedValue !== undefined
+        ? String(column.fixedValue)
+        : column.include && isFixedStringMock && column.fixedValue !== undefined
+          ? String(column.fixedValue)
+          : "";
+
   return (
     <div style={{ verticalAlign: "top" }}>
       <ConfigDialog
@@ -40,17 +65,19 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
         onClick={() => setOpenConfig(true)}
         icon={<SettingsFilled />}
         disabled={
+          !column.include ||
           !column.selectedMock ||
           // Disable if: not picklist/lookup AND (no parameters OR (boolean without fixed value))
           (column.selectedMock.type !== "picklist" &&
             column.selectedMock.type !== "lookup" &&
             (!column.selectedMock.parameters || column.selectedMock.parameters.length === 0) &&
-            !(column.selectedMock.type === "boolean" && column.selectedMock.fixed))
+            !(column.selectedMock.type === "boolean" && column.selectedMock.fixed) &&
+            !isFixedStringMock)
         }
         size="small"
         style={{ marginLeft: "8px" }}
       />
-      <span>{column.selectedValues.map((item) => item.label).join(", ")}</span>
+      <span>{selectedValueText}</span>
     </div>
   );
 });

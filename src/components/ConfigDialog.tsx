@@ -40,6 +40,10 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
   const [selectValues, setSelectValues] = React.useState<SelectionValue[]>([]);
   const [openLookupDialog, setOpenLookupDialog] = React.useState(false);
   const [fixedValue, setFixedValue] = React.useState<any>();
+  const isFixedStringMock =
+    Boolean(column.selectedMock?.fixed) &&
+    column.mockMatch === "string" &&
+    Boolean(column.selectedMock?.type?.includes("string"));
 
   React.useEffect(() => {
     if (openConfig) {
@@ -48,14 +52,14 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
     } else {
       setOpenPrimaryDialog(false);
       setOpenLookupDialog(false);
-      if (column.selectedMock?.type === "boolean") {
+      if (column.selectedMock?.type === "boolean" || isFixedStringMock) {
         setFixedValue(column.fixedValue);
       }
     }
-  }, [openConfig]);
+  }, [openConfig, column.selectedMock?.type, column.fixedValue, isFixedStringMock]);
 
   React.useEffect(() => {
-    const loadPicklistValues = async () => {
+    const loadSelectionValues = async () => {
       if (column.selectedMock?.type === "picklist") {
         const values = await dvSvc.getChoiceValues(vm.selectedTable?.logical || "", column.logicalName);
         column.choiceValues = values;
@@ -64,10 +68,27 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
         if (column.selectedValues && column.selectedValues.length > 0) {
           setSelectedItems(column.selectedValues.map((sv) => sv.value));
         }
+      } else if (column.selectedMock?.type === "boolean") {
+        let values: SelectionValue[] = [];
+        try {
+          values = await dvSvc.getBooleanValues(vm.selectedTable?.logical || "", column.logicalName);
+        } catch {
+          values = [new SelectionValue("False", "false"), new SelectionValue("True", "true")];
+        }
+
+        setSelectValues(values);
+
+        if (column.fixedValue !== undefined) {
+          const selectedValue = column.fixedValue === true ? "true" : "false";
+          const matchingOption = values.find((sv) => sv.value.toLowerCase() === selectedValue);
+          setSelectedItems([matchingOption?.value || selectedValue]);
+        } else {
+          setSelectedItems([]);
+        }
       }
     };
-    loadPicklistValues();
-  }, [column.selectedMock, dvSvc, vm.selectedTable?.logical, column.logicalName]);
+    loadSelectionValues();
+  }, [column.selectedMock, dvSvc, vm.selectedTable?.logical, column.logicalName, column.fixedValue]);
 
   function saveParameters() {
     if (column.selectedMock && column.selectedMock.parameters) {
@@ -90,7 +111,30 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
       });
     }
     if (column.selectedMock?.type === "boolean") {
-      column.fixedValue = fixedValue;
+      const selectedItem = selectedItems[0]?.toString().toLowerCase();
+      if (selectedItem !== undefined) {
+        column.fixedValue = selectedItem === "true" || selectedItem === "1";
+
+        const matchedValue = selectValues.find((sv) => sv.value.toLowerCase() === selectedItem);
+        column.selectedValues = [
+          matchedValue ??
+            new SelectionValue(column.fixedValue ? "True" : "False", column.fixedValue ? "true" : "false"),
+        ];
+      } else {
+        column.fixedValue = fixedValue;
+        if (fixedValue !== undefined) {
+          const fallback = fixedValue ? "true" : "false";
+          const matchedValue = selectValues.find((sv) => sv.value.toLowerCase() === fallback);
+          column.selectedValues = [
+            matchedValue ?? new SelectionValue(fixedValue ? "True" : "False", fixedValue ? "true" : "false"),
+          ];
+        }
+      }
+    }
+    if (isFixedStringMock) {
+      const stringValue = fixedValue !== undefined && fixedValue !== null ? String(fixedValue) : "";
+      column.fixedValue = stringValue;
+      column.selectedValues = stringValue ? [new SelectionValue(stringValue, stringValue)] : [];
     }
     onUpdate(column);
 
@@ -177,12 +221,27 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
                 })}
               {column.selectedMock?.type === "boolean" && (
                 <Field label="Choose Value">
-                  <Checkbox
-                    label={column.selectedMock.name}
-                    checked={fixedValue ?? false}
-                    onChange={(_, data) => {
-                      setFixedValue(data.checked);
-                    }}
+                  <List
+                    aria-label="Boolean Values"
+                    selectionMode="single"
+                    selectedItems={selectedItems}
+                    onSelectionChange={(_e, data) => setSelectedItems(data.selectedItems)}
+                  >
+                    {selectValues.map((value, index) => (
+                      <ListItem key={index} value={value.value}>
+                        {value.label}
+                      </ListItem>
+                    ))}
+                  </List>
+                </Field>
+              )}
+              {isFixedStringMock && (
+                <Field label="Enter Fixed String" size="small">
+                  <Input
+                    size="small"
+                    type="text"
+                    value={fixedValue ?? ""}
+                    onChange={(e) => setFixedValue(e.target.value)}
                   />
                 </Field>
               )}

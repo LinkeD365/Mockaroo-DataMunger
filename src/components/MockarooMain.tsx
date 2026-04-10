@@ -155,8 +155,24 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
       return;
     }
 
-    mckSvc
-      .getMockData(viewModel.rowCount, viewModel.config?.jsonString ?? "", viewModel.mockarooApiKey)
+    const schemaJson = viewModel.config?.jsonString ?? "[]";
+    let schemaFields: unknown[] = [];
+    try {
+      schemaFields = JSON.parse(schemaJson);
+    } catch {
+      schemaFields = [];
+    }
+
+    const hasMockarooFields = Array.isArray(schemaFields) && schemaFields.length > 0;
+    const dataPromise = hasMockarooFields
+      ? mckSvc.getMockData(viewModel.rowCount, schemaJson, viewModel.mockarooApiKey)
+      : Promise.resolve(Array.from({ length: viewModel.rowCount }, () => ({})));
+
+    if (!hasMockarooFields) {
+      onLog("No Mockaroo fields selected; generating rows from fixed values only", "info");
+    }
+
+    dataPromise
       .then((data) => {
         viewModel.data = data;
 

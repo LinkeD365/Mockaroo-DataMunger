@@ -4,6 +4,7 @@ import { dvService } from "../utils/dataverse";
 import { observer } from "mobx-react";
 import { Config, ConfigColumn } from "../model/Config";
 import {
+  Button,
   Combobox,
   ComboboxProps,
   Field,
@@ -26,6 +27,7 @@ import {
   INumberCellEditorParams,
 } from "ag-grid-community";
 import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
+import { FolderOpenRegular, SaveRegular } from "@fluentui/react-icons";
 import { MockTypeSelector } from "./MockSelector";
 import { MockOptionsSelector } from "./MockOptions";
 import { UtilLib } from "../utils/utils";
@@ -54,6 +56,25 @@ interface ConfigTabProps {
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
+
+interface SavedConfigField {
+  logicalName: string;
+  include: boolean;
+  percBlank: number;
+  selectedMockName?: string;
+  selectedValues?: Array<{ label: string; value: string }>;
+  fixedValue?: unknown;
+  parameters?: Record<string, unknown>;
+}
+
+interface SavedConfigFile {
+  version: number;
+  tableLogical: string;
+  tableLabel: string;
+  rowCount: number;
+  fields: SavedConfigField[];
+}
+
 const myTheme = themeQuartz.withParams({
   headerHeight: "30px",
 });
@@ -65,6 +86,8 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   const styles = useStyles();
   const [loadingConfig, setLoadingConfig] = React.useState<boolean>(false);
   const [mockarooKeyInput, setMockarooKeyInput] = React.useState<string>(viewModel.mockarooApiKey);
+  const [tableFilter, setTableFilter] = React.useState<string>(viewModel.selectedTable?.label || "");
+  const isImportingConfigRef = React.useRef(false);
 
   const [colDefs, setColDefs] = React.useState<ColDef<ConfigColumn>[]>([]);
 
@@ -158,6 +181,9 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
 
   React.useEffect(() => {
     const loadConfig = async () => {
+      if (isImportingConfigRef.current) {
+        return;
+      }
       setLoadingConfig(true);
       if (!connection) {
         setLoadingConfig(false);
@@ -191,13 +217,211 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
     setMockarooKeyInput(viewModel.mockarooApiKey);
   }, [viewModel.mockarooApiKey]);
 
+  React.useEffect(() => {
+    setTableFilter(viewModel.selectedTable?.label || "");
+  }, [viewModel.selectedTable]);
+
   function updateItem(_item: ConfigColumn) {
     // No-op: Grid updates are handled reactively via MobX
   }
 
   const onOptionSelect: ComboboxProps["onOptionSelect"] = (_event, data) => {
-    viewModel.selectedTable = viewModel.tables.find((table) => table.logical === (data.optionValue as string));
+    if (!data.optionValue) {
+      viewModel.selectedTable = undefined;
+      viewModel.config = undefined;
+      setTableFilter("");
+      return;
+    }
+
+    const selectedTable = viewModel.tables.find((table) => table.logical === data.optionValue);
+    viewModel.selectedTable = selectedTable;
+    setTableFilter(selectedTable?.label || "");
   };
+
+  const filteredTables = viewModel.tables.filter(
+    (table) =>
+      table.label.toLowerCase().includes(tableFilter.toLowerCase()) ||
+      table.logical.toLowerCase().includes(tableFilter.toLowerCase()),
+  );
+
+  async function saveConfigAsJson(): Promise<void> {
+    if (!viewModel.selectedTable || !viewModel.config?.fields) {
+      window.toolboxAPI.utils.showNotification({
+        title: "No Configuration To Save",
+        body: "Please select a table and configure fields before exporting.",
+        type: "warning",
+      });
+      return;
+    }
+
+    try {
+      const payload: SavedConfigFile = {
+        version: 1,
+        tableLogical: viewModel.selectedTable.logical,
+        tableLabel: viewModel.selectedTable.label,
+        rowCount: viewModel.rowCount,
+        fields: viewModel.config.fields
+          .filter((field) => field.include)
+          .map((field) => ({
+            logicalName: field.logicalName,
+            include: field.include,
+            percBlank: field.percBlank,
+            selectedMockName: field.selectedMock?.name,
+            selectedValues: field.selectedValues?.map((sv) => ({ label: sv.label, value: sv.value })) ?? [],
+            fixedValue: field.fixedValue,
+            parameters:
+              field.selectedMock?.parameters?.reduce(
+                (acc, p) => {
+                  acc[p.name] = p.value;
+                  return acc;
+                },
+                {} as Record<string, unknown>,
+              ) ?? {},
+          })),
+      };
+
+      const fileName = `${viewModel.selectedTable.logical}-mockaroo-config.json`;
+      const savedPath = await window.toolboxAPI.fileSystem.saveFile(fileName, JSON.stringify(payload, null, 2), [
+        { name: "JSON", extensions: ["json"] },
+      ]);
+
+      if (!savedPath) {
+        onLog("Configuration export was cancelled", "info");
+        return;
+      }
+
+      window.toolboxAPI.utils.showNotification({
+        title: "Configuration Saved",
+        body: `Configuration exported to ${savedPath}`,
+        type: "success",
+      });
+      onLog(`Configuration exported to ${savedPath}`, "success");
+    } catch (err) {
+      console.error(err);
+      onLog("Failed to export configuration", "error");
+      window.toolboxAPI.utils.showNotification({
+        title: "Export Failed",
+        body: `Unable to save configuration: ${String(err)}`,
+        type: "error",
+      });
+    }
+  }
+
+  async function loadConfigFromJson(): Promise<void> {
+    try {
+      const importWarnings: string[] = [];
+      const selectedPath = await window.toolboxAPI.fileSystem.selectPath({
+        type: "file",
+        title: "Load Mockaroo Configuration",
+        buttonLabel: "Load",
+        filters: [{ name: "JSON", extensions: ["json"] }],
+      });
+
+      if (!selectedPath) {
+        onLog("Configuration import was cancelled", "info");
+        return;
+      }
+
+      const fileText = await window.toolboxAPI.fileSystem.readText(selectedPath);
+      const parsed: SavedConfigFile = JSON.parse(fileText);
+
+      if (!parsed || !Array.isArray(parsed.fields) || !parsed.tableLogical) {
+        throw new Error("Invalid configuration format");
+      }
+
+      const targetTable = viewModel.tables.find((t) => t.logical === parsed.tableLogical);
+      if (!targetTable) {
+        importWarnings.push(`Table '${parsed.tableLogical}' was not found in this environment.`);
+        const warningBody = importWarnings.join(" ");
+        onLog(warningBody, "warning");
+        window.toolboxAPI.utils.showNotification({
+          title: "Configuration Loaded With Warnings",
+          body: warningBody,
+          type: "warning",
+          duration: 10000,
+        });
+        return;
+      }
+
+      isImportingConfigRef.current = true;
+      setLoadingConfig(true);
+      viewModel.selectedTable = targetTable;
+      const loadedConfig = await dvSvc.loadConfig(targetTable);
+
+      const importedByLogical = new Map(parsed.fields.map((f) => [f.logicalName, f]));
+      const availableFieldNames = new Set((loadedConfig.fields ?? []).map((field) => field.logicalName));
+      const missingFieldNames = parsed.fields
+        .map((field) => field.logicalName)
+        .filter((logicalName) => !availableFieldNames.has(logicalName));
+
+      if (missingFieldNames.length > 0) {
+        importWarnings.push(`Fields not found: ${missingFieldNames.join(", ")}.`);
+      }
+
+      loadedConfig.fields?.forEach((field) => {
+        const imported = importedByLogical.get(field.logicalName);
+        if (!imported) {
+          return;
+        }
+
+        field.include = Boolean(imported.include);
+        field.percBlank = Number.isFinite(imported.percBlank) ? imported.percBlank : 0;
+        field.fixedValue = imported.fixedValue;
+        field.selectedValues =
+          imported.selectedValues?.map((sv) => ({ label: String(sv.label), value: String(sv.value) })) ?? [];
+
+        if (imported.selectedMockName) {
+          const mockType = viewModel.mockTypes.find((mt) => mt.name === imported.selectedMockName);
+          if (mockType) {
+            field.selectedMock = {
+              ...mockType,
+              parameters: mockType.parameters?.map((param) => ({
+                ...param,
+                value:
+                  imported.parameters && Object.prototype.hasOwnProperty.call(imported.parameters, param.name)
+                    ? String(imported.parameters[param.name] ?? "")
+                    : param.value,
+              })),
+            };
+          }
+        }
+      });
+
+      viewModel.config = loadedConfig;
+      if (Number.isFinite(parsed.rowCount) && parsed.rowCount > 0) {
+        viewModel.rowCount = parsed.rowCount;
+      }
+
+      if (importWarnings.length > 0) {
+        const warningBody = `Configuration loaded with warnings: ${importWarnings.join(" ")}`;
+        onLog(warningBody, "warning");
+        window.toolboxAPI.utils.showNotification({
+          title: "Configuration Loaded With Warnings",
+          body: warningBody,
+          type: "warning",
+          duration: 12000,
+        });
+      } else {
+        window.toolboxAPI.utils.showNotification({
+          title: "Configuration Loaded",
+          body: `Loaded configuration from ${selectedPath}`,
+          type: "success",
+        });
+        onLog(`Configuration loaded from ${selectedPath}`, "success");
+      }
+    } catch (err) {
+      console.error(err);
+      onLog("Failed to import configuration", "error");
+      window.toolboxAPI.utils.showNotification({
+        title: "Import Failed",
+        body: `Unable to load configuration: ${String(err)}`,
+        type: "error",
+      });
+    } finally {
+      isImportingConfigRef.current = false;
+      setLoadingConfig(false);
+    }
+  }
 
   function saveMockarooKey(value: string) {
     viewModel.mockarooApiKey = value;
@@ -223,9 +447,10 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   );
   const tablesList = (
     <>
-      {viewModel.tables.map((table) => (
-        <Option key={table.id} value={table.logical}>
-          {table.label}
+      {filteredTables.map((table) => (
+        <Option key={table.id} value={table.logical} text={`${table.label} [${table.logical}]`} checkIcon={null}>
+          <span>{table.label}</span>
+          <span style={{ fontSize: "11px", opacity: 0.75, marginLeft: "6px" }}>[{table.logical}]</span>
         </Option>
       ))}
     </>
@@ -240,12 +465,33 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
             listbox={{ className: styles.listbox, style: { maxHeight: "300px" } }}
             positioning={{ position: "below", align: "start", offset: { crossAxis: 0, mainAxis: 4 } }}
             onOptionSelect={onOptionSelect}
-            value={viewModel.selectedTable?.label || ""}
+            selectedOptions={viewModel.selectedTable ? [viewModel.selectedTable.logical] : []}
+            value={tableFilter}
+            onChange={(e) => setTableFilter(e.target.value)}
             style={{ width: "200px" }}
             size="small"
+            clearable
           >
             {tablesList}
           </Combobox>
+          <Button
+            size="small"
+            appearance="secondary"
+            icon={<FolderOpenRegular />}
+            aria-label="Load Mock Config"
+            title="Load Mock Config"
+            onClick={loadConfigFromJson}
+            style={{ marginLeft: "8px" }}
+          />
+          <Button
+            size="small"
+            appearance="secondary"
+            icon={<SaveRegular />}
+            aria-label="Save Mock Config"
+            title="Save Mock Config"
+            onClick={saveConfigAsJson}
+            style={{ marginLeft: "8px" }}
+          />
         </ToolbarGroup>
         <ToolbarGroup>
           <Field size="small" label="Mockaroo Key">
