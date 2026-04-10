@@ -25,6 +25,8 @@ import { ConfigTab } from "./ConfigTab";
 import { mockarooService } from "../utils/mockaroo";
 import { DataTab } from "./DataTab";
 import { UtilLib } from "../utils/utils";
+import { Config } from "../model/Config";
+import { DatasetTab } from "./DatasetTab";
 
 interface MockarooMainProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -35,6 +37,35 @@ interface MockarooMainProps {
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
+
+interface SavedConfigField {
+  logicalName: string;
+  include: boolean;
+  percBlank: number;
+  selectedMockName?: string;
+  selectedValues?: Array<{ label: string; value: string }>;
+  fixedValue?: unknown;
+  parameters?: Record<string, unknown>;
+}
+
+interface SavedConfigFile {
+  version: number;
+  tableLogical: string;
+  tableLabel: string;
+  rowCount: number;
+  fields: SavedConfigField[];
+}
+
+interface SavedDataset {
+  version: number;
+  configNames: string[];
+}
+
+type SavedConfigStore = Record<string, SavedConfigFile>;
+type SavedDatasetStore = Record<string, SavedDataset>;
+
+const SAVED_CONFIGS_KEY = "mockarooSavedConfigs";
+const SAVED_DATASETS_KEY = "mockarooSavedDatasets";
 
 const useStyles = makeStyles({
   listbox: {
@@ -68,6 +99,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   const [selectedTab, setSelectedTab] = React.useState<TabValue>("config");
   const [openSaveDialog, setOpenSaveDialog] = React.useState(false);
   const [creatingData, setCreatingData] = React.useState(false);
+  const [runningDataset, setRunningDataset] = React.useState(false);
   //#endregion
   const styles = useStyles();
 
@@ -242,6 +274,177 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
     setOpenSaveDialog(true);
   }
 
+  async function runDataset(): Promise<void> {
+    const datasetName = viewModel.selectedDatasetName?.trim();
+    if (!datasetName) {
+      window.toolboxAPI.utils.showNotification({
+        title: "Dataset Not Selected",
+        body: "Select a dataset in the Data Set tab before running.",
+        type: "warning",
+      });
+      return;
+    }
+
+    setRunningDataset(true);
+    const warnings: string[] = [];
+    let totalCreated = 0;
+
+    try {
+      const datasets = ((await window.toolboxAPI.settings.get(SAVED_DATASETS_KEY)) || {}) as SavedDatasetStore;
+      const configs = ((await window.toolboxAPI.settings.get(SAVED_CONFIGS_KEY)) || {}) as SavedConfigStore;
+      const dataset = datasets[datasetName];
+
+      if (!dataset || !Array.isArray(dataset.configNames) || dataset.configNames.length === 0) {
+        throw new Error(`Dataset '${datasetName}' was not found or is empty.`);
+      }
+
+      for (const configName of dataset.configNames) {
+        const savedConfig = configs[configName];
+        if (!savedConfig) {
+          warnings.push(`Config '${configName}' not found.`);
+          continue;
+        }
+
+        const targetTable = viewModel.tables.find((t) => t.logical === savedConfig.tableLogical);
+        if (!targetTable) {
+          warnings.push(`Table '${savedConfig.tableLogical}' for config '${configName}' was not found.`);
+          continue;
+        }
+
+        const loadedConfig: Config = await dvSvc.loadConfig(targetTable);
+        const importedByLogical = new Map(savedConfig.fields.map((f) => [f.logicalName, f]));
+
+        loadedConfig.fields?.forEach((field) => {
+          const imported = importedByLogical.get(field.logicalName);
+          if (!imported) {
+            return;
+          }
+
+          field.include = Boolean(imported.include);
+          field.percBlank = Number.isFinite(imported.percBlank) ? imported.percBlank : 0;
+          field.fixedValue = imported.fixedValue;
+          field.selectedValues =
+            imported.selectedValues?.map((sv) => ({ label: String(sv.label), value: String(sv.value) })) ?? [];
+
+          if (imported.selectedMockName) {
+            const mockType = viewModel.mockTypes.find((mt) => mt.name === imported.selectedMockName);
+            if (mockType) {
+              field.selectedMock = {
+                ...mockType,
+                parameters: mockType.parameters?.map((param) => ({
+                  ...param,
+                  value:
+                    imported.parameters && Object.prototype.hasOwnProperty.call(imported.parameters, param.name)
+                      ? String(imported.parameters[param.name] ?? "")
+                      : param.value,
+                })),
+              };
+            }
+          }
+        });
+
+        viewModel.selectedTable = targetTable;
+        viewModel.config = loadedConfig;
+        viewModel.rowCount =
+          Number.isFinite(savedConfig.rowCount) && savedConfig.rowCount > 0 ? savedConfig.rowCount : 10;
+
+        const schemaJson = viewModel.config?.jsonString ?? "[]";
+        let schemaFields: unknown[] = [];
+        try {
+          schemaFields = JSON.parse(schemaJson);
+        } catch {
+          schemaFields = [];
+        }
+
+        const hasMockarooFields = Array.isArray(schemaFields) && schemaFields.length > 0;
+        const trimmedApiKey = viewModel.mockarooApiKey.trim();
+        if (hasMockarooFields && (!trimmedApiKey || trimmedApiKey.length < MIN_API_KEY_LENGTH)) {
+          throw new Error("Mockaroo API key is required for dataset configs that use Mockaroo fields.");
+        }
+
+        const sourceData = hasMockarooFields
+          ? await mckSvc.getMockData(viewModel.rowCount, schemaJson, viewModel.mockarooApiKey)
+          : Array.from({ length: viewModel.rowCount }, () => ({}));
+
+        const generatedData = sourceData.map((item) => ({
+          ...item,
+          "@odata.type": `Microsoft.Dynamics.CRM.${targetTable.logical}`,
+          ...loadedConfig.fields
+            ?.filter(
+              (f) => f.selectedMock?.fixed && (f.selectedMock.type === "picklist" || f.selectedMock.type === "lookup"),
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName]: field.selectedValues[0]?.label,
+                [field.logicalName + "_value"]: field.selectedValues[0]?.value,
+              }),
+              {},
+            ),
+          ...loadedConfig.fields
+            ?.filter(
+              (f) =>
+                !f.selectedMock?.fixed && (f.selectedMock?.type === "picklist" || f.selectedMock?.type === "lookup"),
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName + "_value"]: item[field.logicalName],
+                [field.logicalName]: field.selectedValues.find((sv) => sv.value === item[field.logicalName]?.toString())
+                  ?.label,
+              }),
+              {},
+            ),
+          ...loadedConfig.fields
+            ?.filter(
+              (f) => f.selectedMock?.fixed && f.selectedMock?.type !== "picklist" && f.selectedMock?.type !== "lookup",
+            )
+            .reduce(
+              (acc, field) => ({
+                ...acc,
+                [field.logicalName]: field.fixedValue,
+              }),
+              {},
+            ),
+        }));
+
+        await dvSvc.createData(targetTable, loadedConfig.fields || [], generatedData);
+        totalCreated += generatedData.length;
+        window.toolboxAPI.utils.showNotification({
+          title: "Dataset Step Complete",
+          body: `${configName} completed: ${generatedData.length} row(s) created in ${targetTable.label}.`,
+          type: "success",
+          duration: 4000,
+        });
+        onLog(`Dataset step '${configName}' completed (${generatedData.length} record(s))`, "success");
+      }
+
+      const summary =
+        warnings.length > 0
+          ? `Dataset '${datasetName}' completed with warnings. Created ${totalCreated} record(s). ${warnings.join(" ")}`
+          : `Dataset '${datasetName}' completed. Created ${totalCreated} record(s).`;
+
+      window.toolboxAPI.utils.showNotification({
+        title: warnings.length > 0 ? "Dataset Completed With Warnings" : "Dataset Completed",
+        body: summary,
+        type: warnings.length > 0 ? "warning" : "success",
+        duration: 12000,
+      });
+      onLog(summary, warnings.length > 0 ? "warning" : "success");
+      setSelectedTab("data");
+    } catch (err) {
+      const message = `Failed to run dataset: ${String(err)}`;
+      window.toolboxAPI.utils.showNotification({
+        title: "Dataset Run Failed",
+        body: message,
+        type: "error",
+      });
+      onLog(message, "error");
+    } finally {
+      setRunningDataset(false);
+    }
+  }
+
   async function createData(): Promise<void> {
     setCreatingData(true);
     await dvSvc
@@ -304,6 +507,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   const tabs = (
     <TabList selectedValue={selectedTab} onTabSelect={onMainTabSelect}>
       <Tab value="config">Configuration</Tab>
+      <Tab value="dataset">Data Set</Tab>
       <Tab value="data" disabled={!(viewModel.data && viewModel.data.length > 0)}>
         Data
       </Tab>
@@ -357,6 +561,9 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
           viewModel={viewModel}
           onLog={onLog}
         />
+      )}
+      {selectedTab === "dataset" && (
+        <DatasetTab viewModel={viewModel} onLog={onLog} onRunDataset={runDataset} runningDataset={runningDataset} />
       )}
       {selectedTab === "data" && (
         <DataTab connection={connection} dvSvc={dvSvc} isLoading={isLoading} viewModel={viewModel} onLog={onLog} />

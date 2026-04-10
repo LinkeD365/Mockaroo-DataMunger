@@ -27,7 +27,7 @@ import {
   INumberCellEditorParams,
 } from "ag-grid-community";
 import { AgGridReact, CustomCellRendererProps } from "ag-grid-react";
-import { FolderOpenRegular, SaveRegular } from "@fluentui/react-icons";
+import { SaveRegular } from "@fluentui/react-icons";
 import { MockTypeSelector } from "./MockSelector";
 import { MockOptionsSelector } from "./MockOptions";
 import { UtilLib } from "../utils/utils";
@@ -45,6 +45,9 @@ const useStyles = makeStyles({
   },
   toolbar: {
     justifyContent: "space-between",
+  },
+  leftToolbarGroup: {
+    alignItems: "center",
   },
 });
 
@@ -75,6 +78,10 @@ interface SavedConfigFile {
   fields: SavedConfigField[];
 }
 
+type SavedConfigStore = Record<string, SavedConfigFile>;
+
+const SAVED_CONFIGS_KEY = "mockarooSavedConfigs";
+
 const myTheme = themeQuartz.withParams({
   headerHeight: "30px",
 });
@@ -87,6 +94,8 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   const [loadingConfig, setLoadingConfig] = React.useState<boolean>(false);
   const [mockarooKeyInput, setMockarooKeyInput] = React.useState<string>(viewModel.mockarooApiKey);
   const [tableFilter, setTableFilter] = React.useState<string>(viewModel.selectedTable?.label || "");
+  const [configName, setConfigName] = React.useState<string>("");
+  const [savedConfigNames, setSavedConfigNames] = React.useState<string[]>([]);
   const isImportingConfigRef = React.useRef(false);
 
   const [colDefs, setColDefs] = React.useState<ColDef<ConfigColumn>[]>([]);
@@ -221,6 +230,15 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
     setTableFilter(viewModel.selectedTable?.label || "");
   }, [viewModel.selectedTable]);
 
+  React.useEffect(() => {
+    const loadSavedConfigNames = async () => {
+      const store = ((await window.toolboxAPI.settings.get(SAVED_CONFIGS_KEY)) || {}) as SavedConfigStore;
+      const names = Object.keys(store).sort((a, b) => a.localeCompare(b));
+      setSavedConfigNames(names);
+    };
+    loadSavedConfigNames();
+  }, []);
+
   function updateItem(_item: ConfigColumn) {
     // No-op: Grid updates are handled reactively via MobX
   }
@@ -254,6 +272,16 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
       return;
     }
 
+    const trimmedConfigName = configName.trim();
+    if (!trimmedConfigName) {
+      window.toolboxAPI.utils.showNotification({
+        title: "Config Name Required",
+        body: "Enter a config name before saving.",
+        type: "warning",
+      });
+      return;
+    }
+
     try {
       const payload: SavedConfigFile = {
         version: 1,
@@ -280,50 +308,54 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
           })),
       };
 
-      const fileName = `${viewModel.selectedTable.logical}-mockaroo-config.json`;
-      const savedPath = await window.toolboxAPI.fileSystem.saveFile(fileName, JSON.stringify(payload, null, 2), [
-        { name: "JSON", extensions: ["json"] },
-      ]);
-
-      if (!savedPath) {
-        onLog("Configuration export was cancelled", "info");
-        return;
-      }
+      const store = ((await window.toolboxAPI.settings.get(SAVED_CONFIGS_KEY)) || {}) as SavedConfigStore;
+      store[trimmedConfigName] = payload;
+      await window.toolboxAPI.settings.set(SAVED_CONFIGS_KEY, store);
+      const names = Object.keys(store).sort((a, b) => a.localeCompare(b));
+      setSavedConfigNames(names);
+      setConfigName(trimmedConfigName);
 
       window.toolboxAPI.utils.showNotification({
         title: "Configuration Saved",
-        body: `Configuration exported to ${savedPath}`,
+        body: `Configuration '${trimmedConfigName}' saved to tool settings.`,
         type: "success",
       });
-      onLog(`Configuration exported to ${savedPath}`, "success");
+      onLog(`Configuration '${trimmedConfigName}' saved`, "success");
     } catch (err) {
       console.error(err);
-      onLog("Failed to export configuration", "error");
+      onLog("Failed to save configuration", "error");
       window.toolboxAPI.utils.showNotification({
-        title: "Export Failed",
+        title: "Save Failed",
         body: `Unable to save configuration: ${String(err)}`,
         type: "error",
       });
     }
   }
 
-  async function loadConfigFromJson(): Promise<void> {
+  async function loadConfigFromJson(selectedConfigName?: string): Promise<void> {
     try {
       const importWarnings: string[] = [];
-      const selectedPath = await window.toolboxAPI.fileSystem.selectPath({
-        type: "file",
-        title: "Load Mockaroo Configuration",
-        buttonLabel: "Load",
-        filters: [{ name: "JSON", extensions: ["json"] }],
-      });
-
-      if (!selectedPath) {
-        onLog("Configuration import was cancelled", "info");
+      const trimmedConfigName = (selectedConfigName ?? configName).trim();
+      if (!trimmedConfigName) {
+        window.toolboxAPI.utils.showNotification({
+          title: "Config Name Required",
+          body: "Enter or select a config name before loading.",
+          type: "warning",
+        });
         return;
       }
 
-      const fileText = await window.toolboxAPI.fileSystem.readText(selectedPath);
-      const parsed: SavedConfigFile = JSON.parse(fileText);
+      const store = ((await window.toolboxAPI.settings.get(SAVED_CONFIGS_KEY)) || {}) as SavedConfigStore;
+      const parsed = store[trimmedConfigName];
+
+      if (!parsed) {
+        window.toolboxAPI.utils.showNotification({
+          title: "Configuration Not Found",
+          body: `No saved configuration named '${trimmedConfigName}'.`,
+          type: "warning",
+        });
+        return;
+      }
 
       if (!parsed || !Array.isArray(parsed.fields) || !parsed.tableLogical) {
         throw new Error("Invalid configuration format");
@@ -404,10 +436,10 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
       } else {
         window.toolboxAPI.utils.showNotification({
           title: "Configuration Loaded",
-          body: `Loaded configuration from ${selectedPath}`,
+          body: `Loaded saved config '${trimmedConfigName}'.`,
           type: "success",
         });
-        onLog(`Configuration loaded from ${selectedPath}`, "success");
+        onLog(`Configuration '${trimmedConfigName}' loaded`, "success");
       }
     } catch (err) {
       console.error(err);
@@ -458,7 +490,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
   const toolbar = (
     <div style={{ overflow: "visible", position: "relative", zIndex: 1000, paddingBottom: "10px" }}>
       <Toolbar className={styles.toolbar}>
-        <ToolbarGroup>
+        <ToolbarGroup className={styles.leftToolbarGroup}>
           <Combobox
             disabled={!viewModel.tables || viewModel.tables.length === 0}
             placeholder="Select a table"
@@ -477,21 +509,33 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
           <Button
             size="small"
             appearance="secondary"
-            icon={<FolderOpenRegular />}
-            aria-label="Load Mock Config"
-            title="Load Mock Config"
-            onClick={loadConfigFromJson}
-            style={{ marginLeft: "8px" }}
-          />
-          <Button
-            size="small"
-            appearance="secondary"
             icon={<SaveRegular />}
             aria-label="Save Mock Config"
             title="Save Mock Config"
             onClick={saveConfigAsJson}
             style={{ marginLeft: "8px" }}
           />
+          <Combobox
+            size="small"
+            placeholder="Saved config"
+            value={configName}
+            onChange={(e) => setConfigName(e.target.value)}
+            onOptionSelect={(_e, data) => {
+              const selectedName = data.optionValue || "";
+              setConfigName(selectedName);
+              if (selectedName) {
+                void loadConfigFromJson(selectedName);
+              }
+            }}
+            style={{ width: "160px", marginLeft: "8px" }}
+            listbox={{ className: styles.listbox, style: { maxHeight: "240px" } }}
+          >
+            {savedConfigNames.map((name) => (
+              <Option key={name} value={name} text={name}>
+                {name}
+              </Option>
+            ))}
+          </Combobox>
         </ToolbarGroup>
         <ToolbarGroup>
           <Field size="small" label="Mockaroo Key">

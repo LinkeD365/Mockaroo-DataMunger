@@ -22,7 +22,7 @@ export const MockTypeSelector = observer((props: MockTypeSelectorProps): React.J
     .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div style={{ verticalAlign: "top" }}>
+    <div style={{ width: "100%", minWidth: 0, display: "flex", alignItems: "center", height: "100%" }}>
       <Combobox
         disabled={!column.include}
         clearable
@@ -31,6 +31,7 @@ export const MockTypeSelector = observer((props: MockTypeSelectorProps): React.J
         selectedOptions={column.selectedMock ? [column.selectedMock.name] : []}
         value={mockFilter}
         onChange={(e) => setMockFilter(e.target.value)}
+        style={{ width: "100%", minWidth: 0 }}
         onOptionSelect={(_e, data) => {
           if (!data.optionValue) {
             column.selectedMock = undefined;
