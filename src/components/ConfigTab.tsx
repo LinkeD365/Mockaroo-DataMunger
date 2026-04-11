@@ -1,5 +1,5 @@
 import React from "react";
-import { ViewModel } from "../model/viewModel";
+import { ViewModel, Table } from "../model/viewModel";
 import { dvService } from "../utils/dataverse";
 import { observer } from "mobx-react";
 import { Config, ConfigColumn } from "../model/Config";
@@ -411,7 +411,7 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
             field.parentTable = {
               logical: imported.parentTableLogical,
               setName: imported.parentTableSetName,
-            } as import("../model/viewModel").Table;
+            } as Table;
           }
         }
       });

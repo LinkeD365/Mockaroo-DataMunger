@@ -1,5 +1,5 @@
 import { observer } from "mobx-react";
-import { ViewModel } from "../model/viewModel";
+import { ViewModel, Table } from "../model/viewModel";
 import { dvService } from "../utils/dataverse";
 import React from "react";
 import {
@@ -125,15 +125,20 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
     setSelectedTab(data.value);
   };
   const MIN_API_KEY_LENGTH = 8;
+
+  function parseSchemaFields(schemaJson: string): unknown[] {
+    try {
+      const parsed = JSON.parse(schemaJson);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
   function getData(): void {
     const schemaJson = viewModel.config?.jsonString ?? "[]";
-    let schemaFields: unknown[] = [];
-    try {
-      schemaFields = JSON.parse(schemaJson);
-    } catch {
-      schemaFields = [];
-    }
-    const hasMockarooFields = Array.isArray(schemaFields) && schemaFields.length > 0;
+    const schemaFields = parseSchemaFields(schemaJson);
+    const hasMockarooFields = schemaFields.length > 0;
 
     if (hasMockarooFields) {
       const trimmedApiKey = viewModel.mockarooApiKey.trim();
@@ -329,7 +334,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
               field.parentTable = {
                 logical: imported.parentTableLogical,
                 setName: imported.parentTableSetName,
-              } as import("../model/viewModel").Table;
+              } as Table;
             }
           }
         });
@@ -511,13 +516,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
               disabled={
                 (viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0 ||
                 (!viewModel.mockarooApiKey &&
-                  (() => {
-                    try {
-                      return (JSON.parse(viewModel.config?.jsonString ?? "[]") as unknown[]).length > 0;
-                    } catch {
-                      return false;
-                    }
-                  })())
+                  parseSchemaFields(viewModel.config?.jsonString ?? "[]").length > 0)
               }
               onClick={getData}
             />
