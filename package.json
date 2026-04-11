@@ -24,8 +24,7 @@
   "configurations": {
     "repository": "https://github.com/LinkeD365/Mockaroo-DataMunger",
     "website": "https://linked365.blog",
-    "readmeUrl": "https://raw.githubusercontent.com/LinkeD365/Mockaroo-DataMunger/refs/heads/master/README.md",
-    "iconUrl": "https://raw.githubusercontent.com/LinkeD365/Mockaroo-DataMunger/refs/heads/master/assets/smallIcon.png"
+    "readmeUrl": "https://raw.githubusercontent.com/LinkeD365/Mockaroo-DataMunger/refs/heads/master/README.md"
   },
   "repository": {
     "type": "git",
