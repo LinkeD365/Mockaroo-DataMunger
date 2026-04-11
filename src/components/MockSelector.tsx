@@ -11,29 +11,55 @@ interface MockTypeSelectorProps {
 
 export const MockTypeSelector = observer((props: MockTypeSelectorProps): React.JSX.Element => {
   const { column, mockTypes, onUpdate } = props;
+  const [mockFilter, setMockFilter] = React.useState<string>(column.selectedMock?.name || "");
+
+  React.useEffect(() => {
+    setMockFilter(column.selectedMock?.name || "");
+  }, [column.selectedMock?.name]);
+
+  const filteredMockTypes = mockTypes
+    .filter((mt) => mt.type.includes(column.mockMatch) && mt.name.toLowerCase().includes(mockFilter.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return (
-    <div style={{ verticalAlign: "top" }}>
+    <div style={{ width: "100%", minWidth: 0, display: "flex", alignItems: "center", height: "100%" }}>
       <Combobox
         disabled={!column.include}
+        clearable
         size="small"
         placeholder="Select mock type"
-        value={column.selectedMock?.name || ""}
+        selectedOptions={column.selectedMock ? [column.selectedMock.name] : []}
+        value={mockFilter}
+        onChange={(e) => setMockFilter(e.target.value)}
+        style={{ width: "100%", minWidth: 0 }}
         onOptionSelect={(_e, data) => {
+          if (!data.optionValue) {
+            column.selectedMock = undefined;
+            column.selectedValues = [];
+            column.fixedValue = undefined;
+            setMockFilter("");
+            onUpdate(column);
+            return;
+          }
+
           const selected = mockTypes.find((mt) => mt.name === data.optionValue);
           if (selected) {
+            const previousMockName = column.selectedMock?.name;
             column.selectedMock = selected;
+            if (previousMockName !== selected.name) {
+              column.selectedValues = [];
+              column.fixedValue = undefined;
+            }
+            setMockFilter(selected.name);
             onUpdate(column);
           }
         }}
       >
-        {mockTypes
-          .filter((mt) => mt.type.includes(column.mockMatch))
-          .map((mt) => (
-            <Option key={mt.name} value={mt.name}>
-              {mt.name}
-            </Option>
-          ))}
+        {filteredMockTypes.map((mt) => (
+          <Option key={mt.name} value={mt.name} text={mt.name}>
+            {mt.name}
+          </Option>
+        ))}
       </Combobox>
     </div>
   );

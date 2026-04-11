@@ -1527,6 +1527,7 @@
       "mockName": "Custom List",
       "type": "lookup"
     },
+    { "name": "Fixed String", "fixed": true, "type": "string|memo", "useMockaroo": false },
     { "name": "Fixed Boolean", "fixed": true, "type": "boolean" }
   ]
 }

@@ -191,7 +191,6 @@ export class dvService {
     try {
       this.onLog(`Loading picklist values for field: ${fieldLogicalName}`, "info");
       const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${fieldLogicalName}')/Microsoft.Dynamics.CRM.PicklistAttributeMetadata?$select=LogicalName&$expand=OptionSet`;
-      console.log("Picklist URL:", url);
       const picklistMeta: any = await this.dvApi.queryData(url);
 
       const options = picklistMeta.OptionSet?.Options || [];
@@ -203,6 +202,37 @@ export class dvService {
     } catch (error) {
       this.onLog(`Error loading picklist values: ${error}`, "error");
       console.error("Error loading picklist values:", error);
+      throw error;
+    }
+  }
+
+  async getBooleanValues(tableLogicalName: string, fieldLogicalName: string): Promise<SelectionValue[]> {
+    if (!this.connection) {
+      this.onLog("No connection available", "error");
+      throw new Error("No connection available");
+    }
+
+    try {
+      this.onLog(`Loading boolean values for field: ${fieldLogicalName}`, "info");
+      const url = `EntityDefinitions(LogicalName='${tableLogicalName}')/Attributes(LogicalName='${fieldLogicalName}')/Microsoft.Dynamics.CRM.BooleanAttributeMetadata?$select=LogicalName&$expand=OptionSet`;
+      const booleanMeta: any = await this.dvApi.queryData(url);
+
+      const falseOption = booleanMeta.OptionSet?.FalseOption;
+      const trueOption = booleanMeta.OptionSet?.TrueOption;
+
+      const values: SelectionValue[] = [
+        new SelectionValue(
+          falseOption?.Label?.UserLocalizedLabel?.Label || "False",
+          String(falseOption?.Value ?? "false"),
+        ),
+        new SelectionValue(trueOption?.Label?.UserLocalizedLabel?.Label || "True", String(trueOption?.Value ?? "true")),
+      ];
+
+      this.onLog(`Boolean values loaded for field: ${fieldLogicalName}`, "success");
+      return values;
+    } catch (error) {
+      this.onLog(`Error loading boolean values: ${error}`, "error");
+      console.error("Error loading boolean values:", error);
       throw error;
     }
   }
