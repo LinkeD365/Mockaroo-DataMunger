@@ -79,9 +79,13 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
         setSelectValues(values);
 
         if (column.fixedValue !== undefined) {
-          const selectedValue = column.fixedValue === true ? "true" : "false";
-          const matchingOption = values.find((sv) => sv.value.toLowerCase() === selectedValue);
-          setSelectedItems([matchingOption?.value || selectedValue]);
+          const isTrueValue =
+            column.fixedValue === true ||
+            `${column.fixedValue}`.toLowerCase() === "true" ||
+            `${column.fixedValue}` === "1";
+          const expectedValues = isTrueValue ? ["true", "1"] : ["false", "0"];
+          const matchingOption = values.find((sv) => expectedValues.includes(sv.value.toLowerCase()));
+          setSelectedItems([matchingOption?.value || (isTrueValue ? "true" : "false")]);
         } else {
           setSelectedItems([]);
         }
@@ -150,8 +154,8 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
       selectedItems={selectedItems}
       onSelectionChange={(_e, data) => setSelectedItems(data.selectedItems)}
     >
-      {selectValues.map((value, index) => (
-        <ListItem key={index} value={value.value}>
+      {selectValues.map((value) => (
+        <ListItem key={value.value} value={value.value}>
           {value.label}
         </ListItem>
       ))}
@@ -227,8 +231,8 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
                     selectedItems={selectedItems}
                     onSelectionChange={(_e, data) => setSelectedItems(data.selectedItems)}
                   >
-                    {selectValues.map((value, index) => (
-                      <ListItem key={index} value={value.value}>
+                    {selectValues.map((value) => (
+                      <ListItem key={value.value} value={value.value}>
                         {value.label}
                       </ListItem>
                     ))}

@@ -2,35 +2,12 @@ import React from "react";
 import { observer } from "mobx-react";
 import { ViewModel } from "../model/viewModel";
 import { Button, Combobox, Option, makeStyles } from "@fluentui/react-components";
-
-interface SavedConfigField {
-  logicalName: string;
-  include: boolean;
-  percBlank: number;
-  selectedMockName?: string;
-  selectedValues?: Array<{ label: string; value: string }>;
-  fixedValue?: unknown;
-  parameters?: Record<string, unknown>;
-}
-
-interface SavedConfigFile {
-  version: number;
-  tableLogical: string;
-  tableLabel: string;
-  rowCount: number;
-  fields: SavedConfigField[];
-}
-
-interface SavedDataset {
-  version: number;
-  configNames: string[];
-}
-
-type SavedConfigStore = Record<string, SavedConfigFile>;
-type SavedDatasetStore = Record<string, SavedDataset>;
-
-const SAVED_CONFIGS_KEY = "mockarooSavedConfigs";
-const SAVED_DATASETS_KEY = "mockarooSavedDatasets";
+import {
+  SavedConfigStore,
+  SavedDatasetStore,
+  SAVED_CONFIGS_KEY,
+  SAVED_DATASETS_KEY,
+} from "../model/savedConfig";
 
 const useStyles = makeStyles({
   container: {

@@ -31,6 +31,11 @@ import { SaveRegular } from "@fluentui/react-icons";
 import { MockTypeSelector } from "./MockSelector";
 import { MockOptionsSelector } from "./MockOptions";
 import { UtilLib } from "../utils/utils";
+import {
+  SavedConfigFile,
+  SavedConfigStore,
+  SAVED_CONFIGS_KEY,
+} from "../model/savedConfig";
 
 ModuleRegistry.registerModules([TextFilterModule, ClientSideRowModelModule, CheckboxEditorModule, NumberEditorModule]);
 
@@ -59,28 +64,6 @@ interface ConfigTabProps {
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
-
-interface SavedConfigField {
-  logicalName: string;
-  include: boolean;
-  percBlank: number;
-  selectedMockName?: string;
-  selectedValues?: Array<{ label: string; value: string }>;
-  fixedValue?: unknown;
-  parameters?: Record<string, unknown>;
-}
-
-interface SavedConfigFile {
-  version: number;
-  tableLogical: string;
-  tableLabel: string;
-  rowCount: number;
-  fields: SavedConfigField[];
-}
-
-type SavedConfigStore = Record<string, SavedConfigFile>;
-
-const SAVED_CONFIGS_KEY = "mockarooSavedConfigs";
 
 const myTheme = themeQuartz.withParams({
   headerHeight: "30px",
@@ -297,6 +280,8 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
             selectedMockName: field.selectedMock?.name,
             selectedValues: field.selectedValues?.map((sv) => ({ label: sv.label, value: sv.value })) ?? [],
             fixedValue: field.fixedValue,
+            parentTableLogical: field.parentTable?.logical,
+            parentTableSetName: field.parentTable?.setName,
             parameters:
               field.selectedMock?.parameters?.reduce(
                 (acc, p) => {
@@ -415,6 +400,18 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
                     : param.value,
               })),
             };
+          }
+        }
+
+        if (field.type === "Lookup" && imported.parentTableLogical) {
+          const parentTable = viewModel.tables.find((t) => t.logical === imported.parentTableLogical);
+          if (parentTable) {
+            field.parentTable = parentTable;
+          } else if (imported.parentTableSetName) {
+            field.parentTable = {
+              logical: imported.parentTableLogical,
+              setName: imported.parentTableSetName,
+            } as import("../model/viewModel").Table;
           }
         }
       });

@@ -27,6 +27,12 @@ import { DataTab } from "./DataTab";
 import { UtilLib } from "../utils/utils";
 import { Config } from "../model/Config";
 import { DatasetTab } from "./DatasetTab";
+import {
+  SavedConfigStore,
+  SavedDatasetStore,
+  SAVED_CONFIGS_KEY,
+  SAVED_DATASETS_KEY,
+} from "../model/savedConfig";
 
 interface MockarooMainProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -37,35 +43,6 @@ interface MockarooMainProps {
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
-
-interface SavedConfigField {
-  logicalName: string;
-  include: boolean;
-  percBlank: number;
-  selectedMockName?: string;
-  selectedValues?: Array<{ label: string; value: string }>;
-  fixedValue?: unknown;
-  parameters?: Record<string, unknown>;
-}
-
-interface SavedConfigFile {
-  version: number;
-  tableLogical: string;
-  tableLabel: string;
-  rowCount: number;
-  fields: SavedConfigField[];
-}
-
-interface SavedDataset {
-  version: number;
-  configNames: string[];
-}
-
-type SavedConfigStore = Record<string, SavedConfigFile>;
-type SavedDatasetStore = Record<string, SavedDataset>;
-
-const SAVED_CONFIGS_KEY = "mockarooSavedConfigs";
-const SAVED_DATASETS_KEY = "mockarooSavedDatasets";
 
 const useStyles = makeStyles({
   listbox: {
@@ -149,24 +126,35 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   };
   const MIN_API_KEY_LENGTH = 8;
   function getData(): void {
-    const trimmedApiKey = viewModel.mockarooApiKey.trim();
-    if (!trimmedApiKey) {
-      onLog("Mockaroo API key is not configured. Please enter your API key.", "error");
-      window.toolboxAPI.utils.showNotification({
-        title: "Mockaroo API Key Missing",
-        body: "Please enter your Mockaroo API key before generating data.",
-        type: "error",
-      });
-      return;
+    const schemaJson = viewModel.config?.jsonString ?? "[]";
+    let schemaFields: unknown[] = [];
+    try {
+      schemaFields = JSON.parse(schemaJson);
+    } catch {
+      schemaFields = [];
     }
-    if (trimmedApiKey.length < MIN_API_KEY_LENGTH) {
-      onLog("Mockaroo API key appears to be invalid. Please check your API key.", "error");
-      window.toolboxAPI.utils.showNotification({
-        title: "Mockaroo API Key Invalid",
-        body: "The API key looks too short. Please double-check and try again.",
-        type: "error",
-      });
-      return;
+    const hasMockarooFields = Array.isArray(schemaFields) && schemaFields.length > 0;
+
+    if (hasMockarooFields) {
+      const trimmedApiKey = viewModel.mockarooApiKey.trim();
+      if (!trimmedApiKey) {
+        onLog("Mockaroo API key is not configured. Please enter your API key.", "error");
+        window.toolboxAPI.utils.showNotification({
+          title: "Mockaroo API Key Missing",
+          body: "Please enter your Mockaroo API key before generating data.",
+          type: "error",
+        });
+        return;
+      }
+      if (trimmedApiKey.length < MIN_API_KEY_LENGTH) {
+        onLog("Mockaroo API key appears to be invalid. Please check your API key.", "error");
+        window.toolboxAPI.utils.showNotification({
+          title: "Mockaroo API Key Invalid",
+          body: "The API key looks too short. Please double-check and try again.",
+          type: "error",
+        });
+        return;
+      }
     }
 
     const fieldsNeedingSelection = viewModel.config?.fields?.filter(
@@ -187,15 +175,6 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
       return;
     }
 
-    const schemaJson = viewModel.config?.jsonString ?? "[]";
-    let schemaFields: unknown[] = [];
-    try {
-      schemaFields = JSON.parse(schemaJson);
-    } catch {
-      schemaFields = [];
-    }
-
-    const hasMockarooFields = Array.isArray(schemaFields) && schemaFields.length > 0;
     const dataPromise = hasMockarooFields
       ? mckSvc.getMockData(viewModel.rowCount, schemaJson, viewModel.mockarooApiKey)
       : Promise.resolve(Array.from({ length: viewModel.rowCount }, () => ({})));
@@ -341,6 +320,18 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
               };
             }
           }
+
+          if (field.type === "Lookup" && imported.parentTableLogical) {
+            const parentTable = viewModel.tables.find((t) => t.logical === imported.parentTableLogical);
+            if (parentTable) {
+              field.parentTable = parentTable;
+            } else if (imported.parentTableSetName) {
+              field.parentTable = {
+                logical: imported.parentTableLogical,
+                setName: imported.parentTableSetName,
+              } as import("../model/viewModel").Table;
+            }
+          }
         });
 
         viewModel.selectedTable = targetTable;
@@ -431,7 +422,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
         duration: 12000,
       });
       onLog(summary, warnings.length > 0 ? "warning" : "success");
-      setSelectedTab("data");
+      setSelectedTab("dataset");
     } catch (err) {
       const message = `Failed to run dataset: ${String(err)}`;
       window.toolboxAPI.utils.showNotification({
@@ -518,7 +509,15 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
               className={styles.button}
               icon={<DatabaseArrowUpFilled />}
               disabled={
-                (viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0 || !viewModel.mockarooApiKey
+                (viewModel.config?.fields?.filter((f) => f.include).length ?? 0) === 0 ||
+                (!viewModel.mockarooApiKey &&
+                  (() => {
+                    try {
+                      return (JSON.parse(viewModel.config?.jsonString ?? "[]") as unknown[]).length > 0;
+                    } catch {
+                      return false;
+                    }
+                  })())
               }
               onClick={getData}
             />
