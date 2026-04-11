@@ -6,6 +6,7 @@
   "main": "index.html",
   "author": "LinkeD365",
   "license": "MIT",
+  "icon": "Linked365Logo.svg",
   "engines": {
     "node": ">=18.0.0"
   },
