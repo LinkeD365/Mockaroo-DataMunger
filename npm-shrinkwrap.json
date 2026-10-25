@@ -1,12 +1,12 @@
 {
   "name": "@linked365/pptb-mockaroo-data-munger",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@linked365/pptb-mockaroo-data-munger",
-      "version": "1.0.2",
+      "version": "1.0.3",
       "license": "MIT",
       "dependencies": {
         "@fluentui/react-components": "^9.72.8",
