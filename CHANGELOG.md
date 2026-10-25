@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.1](https://github.com/LinkeD365/Mockaroo-DataMunger/compare/v0.4.0...v1.0.1) (2026-10-25)
+
+
+### Bug Fixes
+
+* update version to 1.0.1 in package.json and npm-shrinkwrap.json ([ef93199](https://github.com/LinkeD365/Mockaroo-DataMunger/commit/ef93199f699a699321de0a05809863cfda8d73fc))
+* update version to 1.0.1 in package.json and npm-shrinkwrap.json ([e7e7857](https://github.com/LinkeD365/Mockaroo-DataMunger/commit/e7e78570a7c7a8692bfe0f851ed308950a25048d))
+
 ## [0.4.0](https://github.com/LinkeD365/Mockaroo-DataMunger/compare/v0.3.2...v0.4.0) (2026-10-25)
 
 
