@@ -36,6 +36,7 @@ import {
   SavedConfigStore,
   SAVED_CONFIGS_KEY,
 } from "../model/savedConfig";
+import { MAX_RECORD_COUNT } from "../utils/bulkOperations";
 
 ModuleRegistry.registerModules([TextFilterModule, ClientSideRowModelModule, CheckboxEditorModule, NumberEditorModule]);
 
@@ -151,7 +152,6 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               utils={utils}
               column={params.data}
               onUpdate={updateItem}
-              onLog={onLog}
             />
           ) : null,
       },
@@ -545,16 +545,22 @@ export const ConfigTab = observer((props: ConfigTabProps): React.JSX.Element => 
               onBlur={() => saveMockarooKey(mockarooKeyInput.trim())}
             />
           </Field>
-          <Field size="small" label="No. of Rows ">
+          <Field size="small" label={`No. of Rows (max ${MAX_RECORD_COUNT})`}>
             <Input
               size="small"
               type="number"
               width={100}
               placeholder="Number of records"
+              min={1}
+              max={MAX_RECORD_COUNT}
+              step={1}
               value={viewModel.rowCount.toString()}
               style={{ width: "80px" }}
               onChange={(e) => {
-                viewModel.rowCount = parseInt(e.target.value);
+                const parsed = Number(e.target.value);
+                if (Number.isInteger(parsed) && parsed >= 1 && parsed <= MAX_RECORD_COUNT) {
+                  viewModel.rowCount = parsed;
+                }
               }}
             />
           </Field>

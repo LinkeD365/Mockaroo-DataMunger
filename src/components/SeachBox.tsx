@@ -14,7 +14,6 @@ type SearchBoxProps = {
   selected?: string;
   column: ConfigColumn;
   updateSelected: (owner: SelectionValue) => void;
-  onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 };
 
 function useDebounce(cb: string, delay: number) {
@@ -32,7 +31,7 @@ function useDebounce(cb: string, delay: number) {
 }
 
 export const SearchBoxCtl = observer((props: SearchBoxProps): React.JSX.Element => {
-  const { dvSvc, vm, utils, column, onLog } = props;
+  const { dvSvc, vm, utils, column } = props;
   void vm; // keep vm prop for potential future use and avoid unused-variable warnings
 
   const [query, setQuery] = React.useState("");
@@ -45,13 +44,11 @@ export const SearchBoxCtl = observer((props: SearchBoxProps): React.JSX.Element 
 
   React.useEffect(() => {
     if (query && query.length >= 1) {
-      onLog(`Debounced search query: ${query}`, "info");
       searchOwners(query);
     }
   }, [debounceValue]);
 
   const searchOwners = async (searchQuery: string) => {
-    onLog(`Searching for owners with query: ${searchQuery}`, "info");
     setQuery(searchQuery);
     setIsLoading(true);
     setLoadingText("Searching...");
@@ -83,8 +80,8 @@ export const SearchBoxCtl = observer((props: SearchBoxProps): React.JSX.Element 
         //   setResults(response.filter((item) => vm.coOwners.every((coOwner) => coOwner.id !== item.id)));
         // }
       })
-      .catch((error) => {
-        utils.alert("Error", `Error searching owners: ${error.message || error}`);
+      .catch(() => {
+        utils.alert("Lookup Search Failed", "Could not retrieve lookup options. Check the active connection and try again.");
         setIsLoading(false);
       });
   };

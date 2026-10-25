@@ -58,14 +58,7 @@ function App() {
     });
   }, [connection, addLog]);
 
-  const mockarooSvc = useMemo(() => {
-    if (!dvSvc) return null;
-    return new mockarooService({
-      connection: connection,
-      dvSvc: dvSvc,
-      onLog: addLog,
-    });
-  }, [connection, dvSvc, addLog]);
+  const mockarooSvc = useMemo(() => new mockarooService({ onLog: addLog }), [addLog]);
 
   const utils = useMemo(() => {
     return new UtilLib({

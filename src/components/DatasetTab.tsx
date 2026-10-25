@@ -1,7 +1,8 @@
 import React from "react";
 import { observer } from "mobx-react";
 import { ViewModel } from "../model/viewModel";
-import { Button, Combobox, Option, makeStyles } from "@fluentui/react-components";
+import { Button, Combobox, Option, makeStyles, tokens } from "@fluentui/react-components";
+import { SaveRegular } from "@fluentui/react-icons";
 import {
   SavedConfigStore,
   SavedDatasetStore,
@@ -32,19 +33,21 @@ const useStyles = makeStyles({
     minHeight: 0,
   },
   pane: {
-    border: "1px solid #444",
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: "4px",
     padding: "8px",
     minHeight: 0,
     height: "100%",
     overflowY: "auto",
+    backgroundColor: tokens.colorNeutralBackground1,
+    color: tokens.colorNeutralForeground1,
   },
   heading: {
     fontWeight: "600",
     marginBottom: "8px",
   },
   item: {
-    border: "1px solid #555",
+    border: `1px solid ${tokens.colorNeutralStroke1}`,
     borderRadius: "4px",
     padding: "6px 8px",
     marginBottom: "6px",
@@ -53,14 +56,18 @@ const useStyles = makeStyles({
     justifyContent: "space-between",
     gap: "8px",
     cursor: "grab",
-    backgroundColor: "#1f1f1f",
+    backgroundColor: tokens.colorNeutralBackground2,
+    color: tokens.colorNeutralForeground1,
+    ":hover": {
+      backgroundColor: tokens.colorNeutralBackground2Hover,
+    },
   },
   dropZone: {
-    border: "1px dashed #666",
+    border: `1px dashed ${tokens.colorNeutralStroke1}`,
     borderRadius: "4px",
     padding: "10px",
     textAlign: "center",
-    color: "#aaa",
+    color: tokens.colorNeutralForeground2,
     marginTop: "8px",
   },
   orderText: {
@@ -98,14 +105,14 @@ const useStyles = makeStyles({
 interface DatasetTabProps {
   viewModel: ViewModel;
   onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
-  onRunDataset: () => Promise<void>;
+  onReviewDataset: () => Promise<void>;
   runningDataset: boolean;
 }
 
 type DragState = { source: "available" | "ordered"; name: string; index?: number } | null;
 
 export const DatasetTab = observer((props: DatasetTabProps): React.JSX.Element => {
-  const { viewModel, onLog, onRunDataset, runningDataset } = props;
+  const { viewModel, onLog, onReviewDataset, runningDataset } = props;
   const styles = useStyles();
   const [savedConfigNames, setSavedConfigNames] = React.useState<string[]>([]);
   const [savedDatasetNames, setSavedDatasetNames] = React.useState<string[]>([]);
@@ -263,16 +270,16 @@ export const DatasetTab = observer((props: DatasetTabProps): React.JSX.Element =
             </Option>
           ))}
         </Combobox>
-        <Button size="small" appearance="secondary" onClick={() => void saveDataset()}>
+        <Button size="small" appearance="secondary" icon={<SaveRegular />} onClick={() => void saveDataset()}>
           Save Dataset
         </Button>
         <Button
           size="small"
           appearance="primary"
           disabled={runningDataset || !viewModel.selectedDatasetName}
-          onClick={() => void onRunDataset()}
+          onClick={() => void onReviewDataset()}
         >
-          Run Dataset
+          Review Dataset
         </Button>
       </div>
 

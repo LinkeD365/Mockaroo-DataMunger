@@ -30,10 +30,9 @@ interface ConfigDialogProps {
   column: ConfigColumn;
   closeConfig: () => void;
   onUpdate: (field: ConfigColumn) => void;
-  onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Element => {
-  const { dvSvc, vm, utils, onLog, openConfig, closeConfig, column, onUpdate } = props;
+  const { dvSvc, vm, utils, openConfig, closeConfig, column, onUpdate } = props;
   const [openPrimaryDialog, setOpenPrimaryDialog] = React.useState(openConfig);
   const [paramValues, setParamValues] = React.useState<Record<string, any>>({});
   const [selectedItems, setSelectedItems] = React.useState<SelectionItemId[]>([]);
@@ -279,7 +278,6 @@ export const ConfigDialog = observer((props: ConfigDialogProps): React.JSX.Eleme
         utils={utils}
         dialogOpen={openLookupDialog}
         column={column}
-        onLog={onLog}
         onDialogClose={closeConfig}
       />
     </div>

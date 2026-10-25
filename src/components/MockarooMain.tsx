@@ -12,6 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
   makeStyles,
+  MessageBar,
+  MessageBarBody,
   SelectTabData,
   SelectTabEvent,
   Spinner,
@@ -19,6 +21,7 @@ import {
   TabList,
   TabValue,
   Tooltip,
+  tokens,
 } from "@fluentui/react-components";
 import { DatabaseArrowUpFilled, DatabaseCheckmarkFilled } from "@fluentui/react-icons";
 import { ConfigTab } from "./ConfigTab";
@@ -26,6 +29,7 @@ import { mockarooService } from "../utils/mockaroo";
 import { DataTab } from "./DataTab";
 import { UtilLib } from "../utils/utils";
 import { Config } from "../model/Config";
+import { assertDatasetPlanUnchanged, createDatasetPlan, DatasetPlan } from "../model/datasetPreview";
 import { DatasetTab } from "./DatasetTab";
 import {
   SavedConfigStore,
@@ -33,6 +37,7 @@ import {
   SAVED_CONFIGS_KEY,
   SAVED_DATASETS_KEY,
 } from "../model/savedConfig";
+import { DataverseBatchError, validateRecordCount } from "../utils/bulkOperations";
 
 interface MockarooMainProps {
   connection: ToolBoxAPI.DataverseConnection | null;
@@ -57,6 +62,17 @@ const useStyles = makeStyles({
   button: {
     marginRight: "8px",
   },
+  datasetHeader: {
+    display: "flex",
+    alignItems: "baseline",
+    justifyContent: "space-between",
+    gap: tokens.spacingHorizontalM,
+    flexWrap: "wrap",
+  },
+  datasetTotal: {
+    marginLeft: "auto",
+    textAlign: "right",
+  },
   tabEnd: {
     display: "flex",
     width: "100%",
@@ -67,6 +83,48 @@ const useStyles = makeStyles({
   },
 });
 
+interface DatasetPreview extends DatasetPlan {
+  connectionId: string;
+  connectionName: string;
+  connectionEnvironment: string;
+  connectionUrl: string;
+}
+
+export function DatasetCreationHeader({ items }: Pick<DatasetPlan, "items">): React.JSX.Element {
+  const styles = useStyles();
+  return (
+    <div className={styles.datasetHeader}>
+      <span>Review Dataset Creation</span>
+      <span className={styles.datasetTotal}>
+        Total: {items.reduce((sum, item) => sum + item.recordCount, 0)} record(s)
+      </span>
+    </div>
+  );
+}
+
+export function DatasetCreationWarning({ warnings }: { warnings: string[] }): React.JSX.Element {
+  return (
+    <MessageBar intent="warning">
+      <MessageBarBody>
+        <p>
+          Records already created cannot be automatically rolled back. If a step fails, earlier successful steps may
+          remain in Dataverse.
+        </p>
+        {warnings.length > 0 && (
+          <>
+            <p>Some saved steps will be skipped:</p>
+            <ul>
+              {warnings.map((warning, index) => (
+                <li key={index}>{warning}</li>
+              ))}
+            </ul>
+          </>
+        )}
+      </MessageBarBody>
+    </MessageBar>
+  );
+}
+
 export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Element => {
   const { connection, dvSvc, mckSvc, utils, isLoading, viewModel, onLog } = props;
 
@@ -75,6 +133,8 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   const [tablesLoaded, setTablesLoaded] = React.useState(false);
   const [selectedTab, setSelectedTab] = React.useState<TabValue>("config");
   const [openSaveDialog, setOpenSaveDialog] = React.useState(false);
+  const [datasetPreview, setDatasetPreview] = React.useState<DatasetPreview | null>(null);
+  const [openDatasetConfirmation, setOpenDatasetConfirmation] = React.useState(false);
   const [creatingData, setCreatingData] = React.useState(false);
   const [runningDataset, setRunningDataset] = React.useState(false);
   //#endregion
@@ -136,6 +196,17 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
   }
 
   function getData(): void {
+    try {
+      validateRecordCount(viewModel.rowCount);
+    } catch (error) {
+      window.toolboxAPI.utils.showNotification({
+        title: "Invalid Record Count",
+        body: String(error),
+        type: "warning",
+      });
+      return;
+    }
+
     const schemaJson = viewModel.config?.jsonString ?? "[]";
     const schemaFields = parseSchemaFields(schemaJson);
     const hasMockarooFields = schemaFields.length > 0;
@@ -258,7 +329,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
     setOpenSaveDialog(true);
   }
 
-  async function runDataset(): Promise<void> {
+  async function reviewDataset(): Promise<void> {
     const datasetName = viewModel.selectedDatasetName?.trim();
     if (!datasetName) {
       window.toolboxAPI.utils.showNotification({
@@ -269,30 +340,72 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
       return;
     }
 
+    if (!connection) {
+      window.toolboxAPI.utils.showNotification({
+        title: "Connection Required",
+        body: "Select an active Dataverse connection before reviewing this dataset.",
+        type: "warning",
+      });
+      return;
+    }
+
+    try {
+      const activeConnection = await window.toolboxAPI.connections.getActiveConnection();
+      if (
+        !activeConnection ||
+        activeConnection.id !== connection.id ||
+        activeConnection.url !== connection.url
+      ) {
+        throw new Error("The active Dataverse connection changed. Review the dataset again.");
+      }
+      const datasets = ((await window.toolboxAPI.settings.get(SAVED_DATASETS_KEY)) || {}) as SavedDatasetStore;
+      const configs = ((await window.toolboxAPI.settings.get(SAVED_CONFIGS_KEY)) || {}) as SavedConfigStore;
+      const plan = createDatasetPlan(datasetName, datasets[datasetName], configs, viewModel.tables);
+      setDatasetPreview({
+        ...plan,
+        connectionId: connection.id,
+        connectionName: connection.name,
+        connectionEnvironment: connection.environment,
+        connectionUrl: connection.url,
+      });
+      setOpenDatasetConfirmation(true);
+    } catch (error) {
+      window.toolboxAPI.utils.showNotification({
+        title: "Dataset Review Failed",
+        body: String(error),
+        type: "error",
+      });
+      onLog(`Dataset review failed: ${String(error)}`, "error");
+    }
+  }
+
+  async function runDataset(preview: DatasetPreview): Promise<void> {
     setRunningDataset(true);
-    const warnings: string[] = [];
+    const warnings = [...preview.warnings];
     let totalCreated = 0;
 
     try {
+      const activeConnection = await window.toolboxAPI.connections.getActiveConnection();
+      if (
+        !activeConnection ||
+        activeConnection.id !== preview.connectionId ||
+        activeConnection.url !== preview.connectionUrl
+      ) {
+        throw new Error("The active Dataverse connection changed. No dataset records were created.");
+      }
       const datasets = ((await window.toolboxAPI.settings.get(SAVED_DATASETS_KEY)) || {}) as SavedDatasetStore;
       const configs = ((await window.toolboxAPI.settings.get(SAVED_CONFIGS_KEY)) || {}) as SavedConfigStore;
-      const dataset = datasets[datasetName];
+      assertDatasetPlanUnchanged(preview, datasets[preview.datasetName], configs);
 
-      if (!dataset || !Array.isArray(dataset.configNames) || dataset.configNames.length === 0) {
-        throw new Error(`Dataset '${datasetName}' was not found or is empty.`);
-      }
-
-      for (const configName of dataset.configNames) {
+      for (const item of preview.items) {
+        const { configName } = item;
         const savedConfig = configs[configName];
         if (!savedConfig) {
-          warnings.push(`Config '${configName}' not found.`);
-          continue;
+          throw new Error(`Config '${configName}' disappeared after review. Review the dataset again.`);
         }
-
-        const targetTable = viewModel.tables.find((t) => t.logical === savedConfig.tableLogical);
+        const targetTable = viewModel.tables.find((table) => table.logical === item.tableLogical);
         if (!targetTable) {
-          warnings.push(`Table '${savedConfig.tableLogical}' for config '${configName}' was not found.`);
-          continue;
+          throw new Error(`Table '${item.tableLogical}' is no longer available. No further records were created.`);
         }
 
         const loadedConfig: Config = await dvSvc.loadConfig(targetTable);
@@ -341,8 +454,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
 
         viewModel.selectedTable = targetTable;
         viewModel.config = loadedConfig;
-        viewModel.rowCount =
-          Number.isFinite(savedConfig.rowCount) && savedConfig.rowCount > 0 ? savedConfig.rowCount : 10;
+        viewModel.rowCount = item.recordCount;
 
         const schemaJson = viewModel.config?.jsonString ?? "[]";
         let schemaFields: unknown[] = [];
@@ -358,9 +470,9 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
           throw new Error("Mockaroo API key is required for dataset configs that use Mockaroo fields.");
         }
 
-        const sourceData = hasMockarooFields
+        const sourceData: Record<string, unknown>[] = hasMockarooFields
           ? await mckSvc.getMockData(viewModel.rowCount, schemaJson, viewModel.mockarooApiKey)
-          : Array.from({ length: viewModel.rowCount }, () => ({}));
+          : Array.from({ length: viewModel.rowCount }, (): Record<string, unknown> => ({}));
 
         const generatedData = sourceData.map((item) => ({
           ...item,
@@ -404,21 +516,24 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
             ),
         }));
 
-        await dvSvc.createData(targetTable, loadedConfig.fields || [], generatedData);
-        totalCreated += generatedData.length;
+        const currentDatasets = ((await window.toolboxAPI.settings.get(SAVED_DATASETS_KEY)) || {}) as SavedDatasetStore;
+        const currentConfigs = ((await window.toolboxAPI.settings.get(SAVED_CONFIGS_KEY)) || {}) as SavedConfigStore;
+        assertDatasetPlanUnchanged(preview, currentDatasets[preview.datasetName], currentConfigs);
+        const createResult = await dvSvc.createData(targetTable, loadedConfig.fields || [], generatedData);
+        totalCreated += createResult.createdIds.length;
         window.toolboxAPI.utils.showNotification({
           title: "Dataset Step Complete",
-          body: `${configName} completed: ${generatedData.length} row(s) created in ${targetTable.label}.`,
+          body: `${configName} completed: ${createResult.createdIds.length} row(s) created in ${targetTable.label}.`,
           type: "success",
           duration: 4000,
         });
-        onLog(`Dataset step '${configName}' completed (${generatedData.length} record(s))`, "success");
+        onLog(`Dataset step '${configName}' completed (${createResult.createdIds.length} record(s))`, "success");
       }
 
       const summary =
         warnings.length > 0
-          ? `Dataset '${datasetName}' completed with warnings. Created ${totalCreated} record(s). ${warnings.join(" ")}`
-          : `Dataset '${datasetName}' completed. Created ${totalCreated} record(s).`;
+          ? `Dataset '${preview.datasetName}' completed with warnings. Created ${totalCreated} record(s). ${warnings.join(" ")}`
+          : `Dataset '${preview.datasetName}' completed. Created ${totalCreated} record(s).`;
 
       window.toolboxAPI.utils.showNotification({
         title: warnings.length > 0 ? "Dataset Completed With Warnings" : "Dataset Completed",
@@ -429,7 +544,12 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
       onLog(summary, warnings.length > 0 ? "warning" : "success");
       setSelectedTab("dataset");
     } catch (err) {
-      const message = `Failed to run dataset: ${String(err)}`;
+      const partialCount = err instanceof DataverseBatchError ? err.createdCount : 0;
+      const knownCreated = totalCreated + partialCount;
+      const message =
+        knownCreated > 0
+          ? `Failed to run dataset: ${String(err)} ${knownCreated} record(s) were confirmed created; there is no automatic rollback.`
+          : `Failed to run dataset: ${String(err)}`;
       window.toolboxAPI.utils.showNotification({
         title: "Dataset Run Failed",
         body: message,
@@ -438,36 +558,42 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
       onLog(message, "error");
     } finally {
       setRunningDataset(false);
+      setOpenDatasetConfirmation(false);
     }
   }
 
   async function createData(): Promise<void> {
     setCreatingData(true);
-    await dvSvc
-      .createData(viewModel.selectedTable!, viewModel.config?.fields || [], viewModel.data || [])
-      .then(() => {
-        window.toolboxAPI.utils.showNotification({
-          title: "Data Created",
-          body: `${viewModel.data?.length} records created successfully`,
-          type: "success",
-        });
-
-        onLog(`Created ${viewModel.data?.length} records in Dataverse`, "success");
-      })
-      .catch((err) => {
-        console.error("Error creating data:", err);
-
-        window.toolboxAPI.utils.showNotification({
-          title: "Data Creation Error",
-          body: `Not all records could be created. Please check your configuration and the error message: ${err}`,
-          type: "error",
-          duration: 10000,
-        });
-      })
-      .finally(() => {
-        setCreatingData(false);
-        setOpenSaveDialog(false);
+    try {
+      const selectedTable = viewModel.selectedTable;
+      if (!selectedTable) {
+        throw new Error("Select a Dataverse table before creating records.");
+      }
+      const result = await dvSvc.createData(selectedTable, viewModel.config?.fields || [], viewModel.data || []);
+      window.toolboxAPI.utils.showNotification({
+        title: "Data Created",
+        body: `${result.createdIds.length} records created successfully in ${selectedTable.label}.`,
+        type: "success",
       });
+
+      onLog(`Created ${result.createdIds.length} records in Dataverse`, "success");
+    } catch (err) {
+      const partialCount = err instanceof DataverseBatchError ? err.createdCount : 0;
+      const partialText =
+        partialCount > 0
+          ? ` ${partialCount} record(s) were confirmed created before failure; there is no automatic rollback.`
+          : "";
+      window.toolboxAPI.utils.showNotification({
+        title: "Data Creation Error",
+        body: `Could not create all records: ${String(err)}${partialText}`,
+        type: "error",
+        duration: 10000,
+      });
+      onLog(`Data creation failed: ${String(err)}${partialText}`, "error");
+    } finally {
+      setCreatingData(false);
+      setOpenSaveDialog(false);
+    }
   }
 
   const saveDialog = (
@@ -478,7 +604,14 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
           <DialogContent>
             {!creatingData && (
               <div>
-                Do you want to create {viewModel.data?.length} records in the {viewModel.selectedTable?.label} table?
+                <p>
+                  Create {viewModel.data?.length} records in {viewModel.selectedTable?.label} (
+                  {viewModel.selectedTable?.logical})?
+                </p>
+                <p>
+                  Target: {connection?.name} ({connection?.environment}) — {connection?.url}
+                </p>
+                <p>Created records have no automatic rollback. A failed multi-batch operation may leave earlier batches created.</p>
               </div>
             )}
             {creatingData && <Spinner label={"Creating " + viewModel.selectedTable?.label + "(s)"} />}
@@ -489,6 +622,69 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
             </Button>
             <DialogTrigger disableButtonEnhancement>
               <Button appearance="secondary" disabled={creatingData} onClick={() => setOpenSaveDialog(false)}>
+                Cancel
+              </Button>
+            </DialogTrigger>
+          </DialogActions>
+        </DialogBody>
+      </DialogSurface>
+    </Dialog>
+  );
+
+  const datasetConfirmationDialog = (
+    <Dialog
+      open={openDatasetConfirmation}
+      onOpenChange={(_event, data) => {
+        if (!data.open && !runningDataset) {
+          setOpenDatasetConfirmation(false);
+        }
+      }}
+    >
+      <DialogSurface>
+        <DialogBody>
+          <DialogTitle>
+            <DatasetCreationHeader items={datasetPreview?.items ?? []} />
+          </DialogTitle>
+          <DialogContent>
+            {datasetPreview && (
+              <div>
+                <p>
+                  Dataset <strong>{datasetPreview.datasetName}</strong> will create records in the following target:
+                </p>
+                <p>
+                  {datasetPreview.connectionName} ({datasetPreview.connectionEnvironment}) —{" "}
+                  {datasetPreview.connectionUrl}
+                </p>
+                <ul>
+                  {datasetPreview.items.map((item, index) => (
+                    <li key={`${item.configName}-${index}`}>
+                      {item.tableLabel} ({item.tableLogical}): {item.recordCount} record(s), config “{item.configName}”
+                    </li>
+                  ))}
+                </ul>
+                <DatasetCreationWarning warnings={datasetPreview.warnings} />
+              </div>
+            )}
+            {runningDataset && <Spinner label="Creating dataset records..." />}
+          </DialogContent>
+          <DialogActions>
+            <Button
+              appearance="primary"
+              disabled={runningDataset || !datasetPreview}
+              onClick={() => {
+                if (datasetPreview) {
+                  void runDataset(datasetPreview);
+                }
+              }}
+            >
+              Confirm and Create
+            </Button>
+            <DialogTrigger disableButtonEnhancement>
+              <Button
+                appearance="secondary"
+                disabled={runningDataset}
+                onClick={() => setOpenDatasetConfirmation(false)}
+              >
                 Cancel
               </Button>
             </DialogTrigger>
@@ -550,6 +746,7 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
     >
       {tabs}
       {saveDialog}
+      {datasetConfirmationDialog}
       {selectedTab === "config" && (
         <ConfigTab
           connection={connection}
@@ -561,7 +758,12 @@ export const MockarooMain = observer((props: MockarooMainProps): React.JSX.Eleme
         />
       )}
       {selectedTab === "dataset" && (
-        <DatasetTab viewModel={viewModel} onLog={onLog} onRunDataset={runDataset} runningDataset={runningDataset} />
+        <DatasetTab
+          viewModel={viewModel}
+          onLog={onLog}
+          onReviewDataset={reviewDataset}
+          runningDataset={runningDataset}
+        />
       )}
       {selectedTab === "data" && (
         <DataTab connection={connection} dvSvc={dvSvc} isLoading={isLoading} viewModel={viewModel} onLog={onLog} />

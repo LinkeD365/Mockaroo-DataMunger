@@ -1,40 +1,65 @@
-name: Build & Publish to npm
+name: Release
 
 on:
-  workflow_dispatch:
   push:
-    branches: ["master"]
-    paths-ignore:
-      - 'docs/**'
-      - '**.md'
-      - '.github/**'
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: release-main
+  cancel-in-progress: false
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  release:
+    name: Create release pull request
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
-      id-token: write
-    strategy:
-      matrix:
-        node-version: [20.x]
-
+      issues: write
+      pull-requests: write
+    outputs:
+      release-created: ${{ steps.release.outputs.release_created }}
+      release-tag: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Create or update release pull request
+        id: release
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
 
-      - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
+  publish:
+    name: Publish to npm
+    needs: release
+    if: ${{ needs.release.outputs.release-created == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Check out release
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          node-version: ${{ matrix.node-version }}
+          persist-credentials: false
+          ref: ${{ needs.release.outputs.release-tag }}
 
-      - name: "Automated Version Bump"
-        uses: "phips28/gh-action-bump-version@master"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.x
+          registry-url: https://registry.npmjs.org
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Build
-        run: |
-          npm install -g npm@latest
-          npm ci
-          npm run build
-          npm publish --provenance
+        run: npm run build
+
+      - name: Publish
+        run: npm publish --access public --provenance

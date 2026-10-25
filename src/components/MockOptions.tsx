@@ -17,11 +17,10 @@ interface MockOptionsSelectorProps {
   vm: ViewModel;
   utils: UtilLib;
   onUpdate: (column: ConfigColumn) => void;
-  onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
 }
 
 export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): React.JSX.Element => {
-  const { dvSvc, column, vm, utils, onUpdate, onLog } = props;
+  const { dvSvc, column, vm, utils, onUpdate } = props;
   const [openConfig, setOpenConfig] = React.useState(false);
 
   const isFixedStringMock =
@@ -59,7 +58,6 @@ export const MockOptionsSelector = observer((props: MockOptionsSelectorProps): R
         closeConfig={() => setOpenConfig(false)}
         column={column}
         onUpdate={onUpdate}
-        onLog={onLog}
       />
       <Button
         onClick={() => setOpenConfig(true)}

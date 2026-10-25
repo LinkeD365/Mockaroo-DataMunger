@@ -28,12 +28,11 @@ interface LookupDialogProps {
   dialogOpen: boolean;
   column: ConfigColumn;
   utils: UtilLib;
-  onLog: (message: string, type?: "info" | "success" | "warning" | "error") => void;
   onDialogClose: () => void;
 }
 
 export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Element => {
-  const { dvSvc, vm, dialogOpen, column, utils, onLog, onDialogClose } = props;
+  const { dvSvc, vm, dialogOpen, column, utils, onDialogClose } = props;
   const [localSelectionValues, setLocalSelectionValues] = React.useState<SelectionValue[]>([]);
 
   React.useEffect(() => {
@@ -70,7 +69,6 @@ export const LookupDialog = observer((props: LookupDialogProps): React.JSX.Eleme
                 dvSvc={dvSvc}
                 vm={vm}
                 utils={utils}
-                onLog={onLog}
                 column={column}
                 updateSelected={(value) => {
                   if (column.selectedMock?.fixed) {

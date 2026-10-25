@@ -1,12 +1,16 @@
 {
   "name": "@linked365/pptb-mockaroo-data-munger",
-  "version": "0.3.2",
+  "version": "1.0.0",
   "displayName": "Mockaroo Data Munger",
   "description": "A tool to mock data from Mockaroo into your Dataverse tables",
   "main": "index.html",
   "author": "LinkeD365",
   "license": "MIT",
-  "icon": "Linked365Logo.svg",
+  "icon": "mockaroomungerlogo.svg",
+  "features": {
+    "connections": 1,
+    "minAPI": "1.2.2"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
@@ -18,7 +22,10 @@
   ],
   "cspExceptions": {
     "connect-src": [
-      "https://api.mockaroo.com"
+      {
+        "domain": "https://api.mockaroo.com",
+        "exceptionReason": "Mockaroo is used only to generate synthetic data from the configured schema. No existing Dataverse records are sent to this endpoint."
+      }
     ]
   },
   "configurations": {
@@ -32,6 +39,7 @@
   },
   "scripts": {
     "build": "tsc && vite build",
+    "test": "vitest run",
     "dev": "vite",
     "preview": "vite preview",
     "watch": "vite build --watch",
@@ -48,15 +56,21 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@pptb/types": "^1.2.1",
+    "@pptb/types": "^1.2.7",
+    "@testing-library/react": "^16.3.3",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "jsdom": "^26.1.0",
     "typescript": "^5.6.3",
-    "vite": "^7.1.11"
+    "vite": "^7.1.11",
+    "vitest": "^4.1.12"
   },
   "files": [
     "dist",
+    "assets/mockaroo-data-munger-banner.png",
+    "assets/mockaroo-data-munger-screenshot.png",
+    "IMPLEMENTATION.md",
     "npm-shrinkwrap.json"
   ]
 }
