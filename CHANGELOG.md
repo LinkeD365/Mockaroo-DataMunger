@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.0.3](https://github.com/LinkeD365/Mockaroo-DataMunger/compare/v1.0.2...v1.0.3) (2026-10-25)
+
+
+### Bug Fixes
+
+* implement manifest-driven release automation with Release Please configuration ([8c379ae](https://github.com/LinkeD365/Mockaroo-DataMunger/commit/8c379ae5a8ba03c23179556ce10dcb968a7921d3))
+* implement manifest-driven release automation with Release Please… ([d7b75c2](https://github.com/LinkeD365/Mockaroo-DataMunger/commit/d7b75c26116155d1b34ecae1f09272b459499521))
+
 ## [1.0.2](https://github.com/LinkeD365/Mockaroo-DataMunger/compare/v1.0.1...v1.0.2) (2026-10-25)
 
 
