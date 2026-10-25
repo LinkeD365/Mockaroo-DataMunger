@@ -35,6 +35,14 @@ Commands:
 - `npm run build` — type-check and create the production bundle.
 - `npx pptb-validate` — validate the package manifest and distribution metadata.
 
+## Release automation
+
+The release workflow uses manifest-driven Release Please configuration in `release-please-config.json` and `.release-please-manifest.json`. The manifest starts from the existing package version, 1.0.2, rather than the older v0.4.2 GitHub release. Conventional commits determine the next version (for example, a fix produces 1.0.3); there is no permanent forced release version.
+
+The bootstrap SHA marks the main-branch commit where the package was already 1.0.2, preventing old release history from being included in the initial migration changelog. Release Please ignores this boundary after a matching release exists.
+
+Merge these configuration changes into `main`, then run the Release workflow or let its push trigger run. Review the generated 1.x release PR instead of manually editing its package version. Release Please maintains the manifest, package metadata, shrinkwrap, and changelog in its release PR. Root-package release outputs continue to drive the existing tag checkout and npm publish job.
+
 ## Manual testing checklist
 
 Run these checks inside Power Platform ToolBox against a disposable development or sandbox Dataverse environment, not production. Use synthetic data, check for plug-ins or flows triggered by record creation, and plan cleanup: the tool has no automatic rollback. Leave items unchecked until a person has verified the result; automated tests and screenshots alone do not complete this checklist.
