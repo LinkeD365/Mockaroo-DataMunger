@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.4.1](https://github.com/LinkeD365/Mockaroo-DataMunger/compare/v0.4.0...v0.4.1) (2026-10-25)
+## [1.0.1](https://github.com/LinkeD365/Mockaroo-DataMunger/compare/v0.4.0...v1.0.1) (2026-10-25)
 
 
 ### Bug Fixes
