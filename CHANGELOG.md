@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/LinkeD365/Mockaroo-DataMunger/compare/v0.4.1...v0.4.2) (2026-10-25)
+
+
+### Bug Fixes
+
+* update readmeUrl to point to main branch in package.json ([f423312](https://github.com/LinkeD365/Mockaroo-DataMunger/commit/f4233122ce9fd185cdca1b745afc9636944c490b))
+* update readmeUrl to point to main branch in package.json ([2e0f5be](https://github.com/LinkeD365/Mockaroo-DataMunger/commit/2e0f5be4d4abb079c800210136686d8a37ae5aae))
+
 ## [1.0.1](https://github.com/LinkeD365/Mockaroo-DataMunger/compare/v0.4.0...v1.0.1) (2026-10-25)
 
 
